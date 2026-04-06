@@ -240,6 +240,14 @@ export function ProjectPage() {
     void updateTask(uid, pid, taskId, { assigneeId })
   }
 
+  function handleStartQuick(taskId: string, ymd: string | null) {
+    void updateTask(uid, pid, taskId, {
+      startDate: ymd
+        ? Timestamp.fromDate(new Date(ymd + 'T12:00:00'))
+        : null,
+    })
+  }
+
   function handleDueQuick(taskId: string, ymd: string | null) {
     void updateTask(uid, pid, taskId, {
       dueDate: ymd
@@ -644,6 +652,7 @@ export function ProjectPage() {
           }
           onAddTask={(sid) => void onAddTask(sid)}
           onAssign={handleAssignQuick}
+          onStartChange={handleStartQuick}
           onDueChange={handleDueQuick}
           onPriorityChange={handlePriorityQuick}
           onAddSubtask={(parentId, sectionId, title) =>

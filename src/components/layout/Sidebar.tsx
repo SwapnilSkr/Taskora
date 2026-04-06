@@ -113,9 +113,6 @@ export function Sidebar() {
       </button>
 
       <div className="sidebar-footer">
-        <button type="button" className="btn-upgrade">
-          Upgrade
-        </button>
         <button type="button" className="link-muted">
           <IconMail />
           Invite teammates

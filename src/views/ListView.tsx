@@ -15,6 +15,7 @@ export type SortMode = 'sortOrder' | 'dueDate' | 'priority' | 'name'
 type Pop =
   | null
   | { k: 'assign'; taskId: string }
+  | { k: 'start'; taskId: string }
   | { k: 'due'; taskId: string }
   | { k: 'prio'; taskId: string }
   | { k: 'taskmenu'; taskId: string }
@@ -34,6 +35,7 @@ type Props = {
   onToggleComplete: (t: TaskDoc) => void
   onAddTask: (sectionId: string) => void
   onAssign: (taskId: string, assigneeId: string | null) => void
+  onStartChange: (taskId: string, ymd: string | null) => void
   onDueChange: (taskId: string, ymd: string | null) => void
   onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
   onAddSubtask: (parentId: string, sectionId: string, title: string) => void
@@ -140,6 +142,7 @@ export function ListView({
   onToggleComplete,
   onAddTask,
   onAssign,
+  onStartChange,
   onDueChange,
   onPriorityChange,
   onAddSubtask,
@@ -193,7 +196,7 @@ export function ListView({
                     ) : null}
                   </td>
                 ) : null}
-                <td colSpan={multiSelectMode ? 6 : 6}>
+                <td colSpan={7}>
                   <span className="section-title-wrap">
                     <span className="section-title-text">{s.name}</span>
                     <button
@@ -267,6 +270,7 @@ export function ListView({
                     onTaskClick={onTaskClick}
                     onToggleComplete={onToggleComplete}
                     onAssign={onAssign}
+                    onStartChange={onStartChange}
                     onDueChange={onDueChange}
                     onPriorityChange={onPriorityChange}
                     onDeleteTask={onDeleteTask}
@@ -276,7 +280,7 @@ export function ListView({
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
-                      <td colSpan={multiSelectMode ? 7 : 6}>
+                      <td colSpan={multiSelectMode ? 8 : 7}>
                         <div className="subtask-composer">
                           <span className="subtask-composer-branch" aria-hidden />
                           <input
@@ -339,7 +343,7 @@ export function ListView({
                     ) : null}
                   </td>
                 ) : null}
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <span className="section-title-text">{key}</span>
                 </td>
               </tr>
@@ -357,6 +361,7 @@ export function ListView({
                     onTaskClick={onTaskClick}
                     onToggleComplete={onToggleComplete}
                     onAssign={onAssign}
+                    onStartChange={onStartChange}
                     onDueChange={onDueChange}
                     onPriorityChange={onPriorityChange}
                     onDeleteTask={onDeleteTask}
@@ -366,7 +371,7 @@ export function ListView({
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
-                      <td colSpan={multiSelectMode ? 7 : 6}>
+                      <td colSpan={multiSelectMode ? 8 : 7}>
                         <div className="subtask-composer">
                           <span className="subtask-composer-branch" aria-hidden />
                           <input
@@ -418,9 +423,10 @@ export function ListView({
               ✓
             </th>
             <th>Task</th>
-            <th style={{ width: '16%' }}>Assignee</th>
-            <th style={{ width: '16%' }}>Due</th>
-            <th style={{ width: '14%' }}>Priority</th>
+            <th style={{ width: '14%' }}>Assignee</th>
+            <th style={{ width: '12%' }}>Start</th>
+            <th style={{ width: '12%' }}>Due</th>
+            <th style={{ width: '12%' }}>Priority</th>
             <th style={{ width: 44 }} aria-label="Actions" />
           </tr>
         </thead>
@@ -442,6 +448,7 @@ function TaskRow({
   onTaskClick,
   onToggleComplete,
   onAssign,
+  onStartChange,
   onDueChange,
   onPriorityChange,
   onDeleteTask,
@@ -458,18 +465,20 @@ function TaskRow({
   onTaskClick: (t: TaskDoc) => void
   onToggleComplete: (t: TaskDoc) => void
   onAssign: (taskId: string, assigneeId: string | null) => void
+  onStartChange: (taskId: string, ymd: string | null) => void
   onDueChange: (taskId: string, ymd: string | null) => void
   onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
   onDeleteTask: (taskId: string) => void
   onOpenSubtask: () => void
 }) {
+  const start = tsToDate(t.startDate)
   const due = tsToDate(t.dueDate)
   const dueState = dueBadgeState(due, t.completed)
   const assigneeLabel =
     t.assigneeId === uid ? 'You' : t.assigneeId ? 'Member' : 'Assign'
 
   const prios: TaskDoc['priority'][] = ['low', 'medium', 'high', 'urgent']
-  const subFillColSpan = 3
+  const subFillColSpan = 4
 
   return (
     <>
@@ -542,6 +551,47 @@ function TaskRow({
                 }}
               >
                 Unassigned
+              </button>
+            </div>
+          ) : null}
+        </td>
+        <td
+          style={{ verticalAlign: 'middle', position: 'relative' }}
+          data-popover-root
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className={`cell-quick-btn start-cell-btn ${start ? 'is-set' : ''}`}
+            onClick={() =>
+              setPop(
+                pop?.k === 'start' && pop.taskId === t.id
+                  ? null
+                  : { k: 'start', taskId: t.id },
+              )
+            }
+          >
+            <IconCalendar width={14} height={14} />
+            <span>{fmtDate(start)}</span>
+          </button>
+          {pop?.k === 'start' && pop.taskId === t.id ? (
+            <div className="inline-popover inline-popover-wide" data-popover-root>
+              <div className="mini-label">Start date</div>
+              <input
+                type="date"
+                className="input"
+                defaultValue={dateToInputValue(start)}
+                onChange={(e) => onStartChange(t.id, e.target.value || null)}
+              />
+              <button
+                type="button"
+                className="linkish-btn"
+                onClick={() => {
+                  onStartChange(t.id, null)
+                  setPop(null)
+                }}
+              >
+                Clear start date
               </button>
             </div>
           ) : null}
