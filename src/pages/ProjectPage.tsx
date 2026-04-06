@@ -1,5 +1,13 @@
 import { Timestamp } from 'firebase/firestore'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   IconChevronDown,
@@ -9,6 +17,7 @@ import {
   IconStar,
 } from '../components/icons'
 import { ProjectColorPicker } from '../components/ProjectColorPicker'
+import { RoutePageFallback } from '@/components/RoutePageFallback'
 import { TaskDetailPanel } from '../components/TaskDetailPanel'
 import { useAuth } from '../context/AuthContext'
 import { useModals } from '../context/ModalContext'
@@ -35,18 +44,32 @@ import type {
   StatusDoc,
   TaskDoc,
 } from '../types/models'
-import { BoardView } from '../views/BoardView'
-import { DashboardView } from '../views/DashboardView'
-import { GanttView } from '../views/GanttView'
-import {
-  ListView,
-  type GroupMode,
-  type SortMode,
-} from '../views/ListView'
-import { OverviewView } from '../views/OverviewView'
-import { TimelineViewTimeline } from '../views/TimelineView'
-import { WorkloadView } from '../views/WorkloadView'
+import type { GroupMode, SortMode } from '../views/ListView'
 import { Button } from '@/components/ui/button'
+
+const OverviewView = lazy(() =>
+  import('../views/OverviewView').then((m) => ({ default: m.OverviewView })),
+)
+const ListView = lazy(() =>
+  import('../views/ListView').then((m) => ({ default: m.ListView })),
+)
+const BoardView = lazy(() =>
+  import('../views/BoardView').then((m) => ({ default: m.BoardView })),
+)
+const TimelineViewTimeline = lazy(() =>
+  import('../views/TimelineView').then((m) => ({
+    default: m.TimelineViewTimeline,
+  })),
+)
+const DashboardView = lazy(() =>
+  import('../views/DashboardView').then((m) => ({ default: m.DashboardView })),
+)
+const GanttView = lazy(() =>
+  import('../views/GanttView').then((m) => ({ default: m.GanttView })),
+)
+const WorkloadView = lazy(() =>
+  import('../views/WorkloadView').then((m) => ({ default: m.WorkloadView })),
+)
 
 const VIEWS: { id: ProjectView; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -708,84 +731,86 @@ export function ProjectPage() {
         </div>
       ) : null}
 
-      {activeView === 'overview' ? (
-        <OverviewView project={project} tasks={tasks} sections={sections} />
-      ) : null}
-      {activeView === 'list' ? (
-        <ListView
-          sections={sections}
-          statuses={statuses}
-          tasks={filteredTasks}
-          tasksForMove={tasks}
-          group={group}
-          sort={sort}
-          uid={uid}
-          multiSelectMode={multiSelectMode}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          onSetManySelected={setManySelected}
-          onTaskClick={setSelected}
-          onStatusChange={(taskId, statusId) => {
-            const s = statuses.find((x) => x.id === statusId)
-            void updateTask(uid, pid, taskId, {
-              statusId,
-              completed: s?.isCompleted ?? false,
-            })
-          }}
-          onAddTask={(sid) => void onAddTask(sid)}
-          onAssign={handleAssignQuick}
-          onStartChange={handleStartQuick}
-          onDueChange={handleDueQuick}
-          onPriorityChange={handlePriorityQuick}
-          onAddSubtask={(parentId, sectionId, title) =>
-            void handleAddSubtaskQuick(parentId, sectionId, title)
-          }
-          onDeleteTask={(id) => void handleDeleteTaskRow(id)}
-          onRequestRenameSection={(sid, name) =>
-            void handleRequestRenameSection(sid, name)
-          }
-          onDeleteSection={(sid) => void handleDeleteSection(sid)}
-          onMoveTask={(taskId, patch) => {
-            void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
-              const msg =
-                err instanceof Error ? err.message : 'Could not move this task.'
-              void alert({ title: 'Move blocked', message: msg })
-            })
-          }}
-        />
-      ) : null}
-      {activeView === 'board' ? (
-        <BoardView
-          sections={sections}
-          statuses={statuses}
-          tasks={filteredTasks}
-          tasksForMove={tasks}
-          onTaskClick={setSelected}
-          onMoveTask={(taskId, patch) => {
-            void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
-              const msg =
-                err instanceof Error ? err.message : 'Could not move this task.'
-              void alert({ title: 'Move blocked', message: msg })
-            })
-          }}
-        />
-      ) : null}
-      {activeView === 'timeline' ? (
-        <TimelineViewTimeline
-          tasks={filteredTasks}
-          sections={sections}
-          onTaskClick={setSelected}
-        />
-      ) : null}
-      {activeView === 'dashboard' ? (
-        <DashboardView tasks={filteredTasks} statuses={statuses} />
-      ) : null}
-      {activeView === 'gantt' ? (
-        <GanttView tasks={filteredTasks} onTaskClick={setSelected} />
-      ) : null}
-      {activeView === 'workload' ? (
-        <WorkloadView tasks={filteredTasks} uid={uid} />
-      ) : null}
+      <Suspense fallback={<RoutePageFallback />}>
+        {activeView === 'overview' ? (
+          <OverviewView project={project} tasks={tasks} sections={sections} />
+        ) : null}
+        {activeView === 'list' ? (
+          <ListView
+            sections={sections}
+            statuses={statuses}
+            tasks={filteredTasks}
+            tasksForMove={tasks}
+            group={group}
+            sort={sort}
+            uid={uid}
+            multiSelectMode={multiSelectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onSetManySelected={setManySelected}
+            onTaskClick={setSelected}
+            onStatusChange={(taskId, statusId) => {
+              const s = statuses.find((x) => x.id === statusId)
+              void updateTask(uid, pid, taskId, {
+                statusId,
+                completed: s?.isCompleted ?? false,
+              })
+            }}
+            onAddTask={(sid) => void onAddTask(sid)}
+            onAssign={handleAssignQuick}
+            onStartChange={handleStartQuick}
+            onDueChange={handleDueQuick}
+            onPriorityChange={handlePriorityQuick}
+            onAddSubtask={(parentId, sectionId, title) =>
+              void handleAddSubtaskQuick(parentId, sectionId, title)
+            }
+            onDeleteTask={(id) => void handleDeleteTaskRow(id)}
+            onRequestRenameSection={(sid, name) =>
+              void handleRequestRenameSection(sid, name)
+            }
+            onDeleteSection={(sid) => void handleDeleteSection(sid)}
+            onMoveTask={(taskId, patch) => {
+              void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
+                const msg =
+                  err instanceof Error ? err.message : 'Could not move this task.'
+                void alert({ title: 'Move blocked', message: msg })
+              })
+            }}
+          />
+        ) : null}
+        {activeView === 'board' ? (
+          <BoardView
+            sections={sections}
+            statuses={statuses}
+            tasks={filteredTasks}
+            tasksForMove={tasks}
+            onTaskClick={setSelected}
+            onMoveTask={(taskId, patch) => {
+              void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
+                const msg =
+                  err instanceof Error ? err.message : 'Could not move this task.'
+                void alert({ title: 'Move blocked', message: msg })
+              })
+            }}
+          />
+        ) : null}
+        {activeView === 'timeline' ? (
+          <TimelineViewTimeline
+            tasks={filteredTasks}
+            sections={sections}
+            onTaskClick={setSelected}
+          />
+        ) : null}
+        {activeView === 'dashboard' ? (
+          <DashboardView tasks={filteredTasks} statuses={statuses} />
+        ) : null}
+        {activeView === 'gantt' ? (
+          <GanttView tasks={filteredTasks} onTaskClick={setSelected} />
+        ) : null}
+        {activeView === 'workload' ? (
+          <WorkloadView tasks={filteredTasks} uid={uid} />
+        ) : null}
+      </Suspense>
 
       {activeView === 'list' || activeView === 'board' ? (
         <Button

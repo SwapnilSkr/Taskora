@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { Outlet } from 'react-router-dom'
+import { RoutePageFallback } from '@/components/RoutePageFallback'
 import { CommandPalette } from '../CommandPalette'
 import { SidebarContent, SidebarDesktop } from './Sidebar'
 import { TopBar } from './TopBar'
@@ -74,7 +75,9 @@ export function AppLayout() {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
-          <Outlet />
+          <Suspense fallback={<RoutePageFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
