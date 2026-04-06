@@ -196,7 +196,7 @@ export function ListView({
                     ) : null}
                   </td>
                 ) : null}
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <span className="section-title-wrap">
                     <span className="section-title-text">{s.name}</span>
                     <button
@@ -280,7 +280,7 @@ export function ListView({
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
-                      <td colSpan={multiSelectMode ? 8 : 7}>
+                      <td colSpan={multiSelectMode ? 9 : 8}>
                         <div className="subtask-composer">
                           <span className="subtask-composer-branch" aria-hidden />
                           <input
@@ -343,7 +343,7 @@ export function ListView({
                     ) : null}
                   </td>
                 ) : null}
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <span className="section-title-text">{key}</span>
                 </td>
               </tr>
@@ -371,7 +371,7 @@ export function ListView({
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
-                      <td colSpan={multiSelectMode ? 8 : 7}>
+                      <td colSpan={multiSelectMode ? 9 : 8}>
                         <div className="subtask-composer">
                           <span className="subtask-composer-branch" aria-hidden />
                           <input
@@ -423,6 +423,9 @@ export function ListView({
               ✓
             </th>
             <th>Task</th>
+            <th style={{ width: '11%' }} title="Add subtasks">
+              Subtasks
+            </th>
             <th style={{ width: '14%' }}>Assignee</th>
             <th style={{ width: '12%' }}>Start</th>
             <th style={{ width: '12%' }}>Due</th>
@@ -478,7 +481,7 @@ function TaskRow({
     t.assigneeId === uid ? 'You' : t.assigneeId ? 'Member' : 'Assign'
 
   const prios: TaskDoc['priority'][] = ['low', 'medium', 'high', 'urgent']
-  const subFillColSpan = 4
+  const subFillColSpan = 5
 
   return (
     <>
@@ -509,9 +512,23 @@ function TaskRow({
         </td>
         <td onClick={() => onTaskClick(t)} style={{ cursor: 'pointer' }}>
           <span style={{ fontWeight: 600 }}>{t.title}</span>
-          {subtasks.length > 0 ? (
-            <span className="subtask-count-pill">{subtasks.length} subtasks</span>
-          ) : null}
+        </td>
+        <td
+          style={{ verticalAlign: 'middle' }}
+          data-popover-root
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className={`cell-quick-btn subtask-quick-btn ${subtasks.length > 0 ? 'is-set' : ''}`}
+            title={subtasks.length > 0 ? 'Add another subtask' : 'Add subtask'}
+            onClick={() => onOpenSubtask()}
+          >
+            <IconPlus width={14} height={14} />
+            <span>
+              {subtasks.length > 0 ? `${subtasks.length} subtasks` : 'Add subtask'}
+            </span>
+          </button>
         </td>
         <td
           style={{ verticalAlign: 'middle', position: 'relative' }}
