@@ -38,8 +38,7 @@ type Pop =
   | { k: "start"; taskId: string }
   | { k: "due"; taskId: string }
   | { k: "prio"; taskId: string }
-  | { k: "statuspick"; taskId: string }
-  | { k: "sectionmenu"; sectionId: string };
+  | { k: "statuspick"; taskId: string };
 
 type Props = {
   sections: SectionDoc[];
@@ -338,61 +337,47 @@ export function ListView({
                       >
                         + Add task
                       </button>
-                      <div
-                        className="relative inline-flex items-center"
-                        data-popover-root
-                      >
-                        <button
-                          type="button"
-                          className="grid place-items-center rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
-                          aria-label="Section options"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPop(
-                              pop?.k === "sectionmenu" && pop.sectionId === s.id
-                                ? null
-                                : { k: "sectionmenu", sectionId: s.id },
-                            );
-                          }}
-                        >
-                          <IconChevronDown
-                            style={{
-                              transform:
-                                pop?.k === "sectionmenu" &&
-                                pop.sectionId === s.id
-                                  ? "rotate(180deg)"
-                                  : undefined,
-                            }}
-                          />
-                        </button>
-                        {pop?.k === "sectionmenu" && pop.sectionId === s.id ? (
-                          <div
-                            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-                            data-popover-root
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="group grid place-items-center rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[state=open]:bg-hover-surface data-[state=open]:text-fg"
+                            aria-label="Section options"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <button
-                              type="button"
-                              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-                              onClick={() => {
-                                setPop(null);
-                                onRequestRenameSection(s.id, s.name);
-                              }}
-                            >
-                              Rename section…
-                            </button>
-                            <button
-                              type="button"
-                              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-soft-danger hover:bg-hover-surface"
-                              onClick={() => {
-                                setPop(null);
-                                void onDeleteSection(s.id);
-                              }}
-                            >
-                              Delete section…
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
+                            <IconChevronDown className="size-[18px] transition-transform group-data-[state=open]:rotate-180" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="start"
+                          sideOffset={4}
+                          collisionPadding={8}
+                          className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
+                        >
+                          <DropdownMenuItem
+                            className="text-[13px]"
+                            onSelect={() => onAddTask(s.id)}
+                          >
+                            Add task
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-[13px]"
+                            onSelect={() =>
+                              onRequestRenameSection(s.id, s.name)
+                            }
+                          >
+                            Rename section…
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            className="text-[13px]"
+                            onSelect={() => void onDeleteSection(s.id)}
+                          >
+                            Delete section…
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </span>
                   </td>
                 </tr>
