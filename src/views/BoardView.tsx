@@ -67,8 +67,7 @@ export function BoardView({
       sensors={sensors}
       collisionDetection={taskDropCollisionDetection}
       onDragStart={(e) => {
-        const id = parseTaskDragId(e.active.id);
-        if (id) setActiveId(id);
+        setActiveId(parseTaskDragId(e.active.id));
       }}
       onDragCancel={() => setActiveId(null)}
       onDragEnd={(e) => void onDragEnd(e)}
@@ -89,8 +88,18 @@ export function BoardView({
       </div>
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
-          <div className="w-sidebar cursor-grabbing rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold shadow-lg">
-            {activeTask.title}
+          <div className="box-border w-max max-w-[min(var(--spacing-sidebar),calc(100vw-2rem))] min-w-[200px] cursor-grabbing overflow-hidden rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 shadow-lg">
+            <div className="flex min-w-0 flex-col gap-1.5 text-[13px] font-semibold">
+              {activeTask.statusId ? (
+                <StatusTag sid={activeTask.statusId} statuses={statuses} />
+              ) : null}
+              <span
+                className="min-w-0 truncate"
+                title={activeTask.title || undefined}
+              >
+                {activeTask.title.trim() || "Untitled task"}
+              </span>
+            </div>
           </div>
         ) : null}
       </DragOverlay>
@@ -187,7 +196,7 @@ function RootTaskCard({
         {...listeners}
         {...attributes}
         className={clsx(
-          "cursor-grab rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold active:cursor-grabbing",
+          "min-w-0 cursor-grab overflow-hidden rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold active:cursor-grabbing",
           isOver &&
             "outline-2 outline-dashed outline-share outline-offset-2",
         )}
@@ -197,11 +206,11 @@ function RootTaskCard({
         tabIndex={0}
         title="Drag to move or nest. Double-click to open."
       >
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           {task.statusId ? (
             <StatusTag sid={task.statusId} statuses={statuses} />
           ) : null}
-          <span>{task.title}</span>
+          <span className="min-w-0 truncate">{task.title}</span>
         </div>
       </div>
       {subtasks.length > 0 ? (
@@ -244,7 +253,7 @@ function SubtaskCard({
       style={style}
       {...listeners}
       {...attributes}
-      className="cursor-grab rounded-md border border-border-subtle/80 bg-app px-2 py-2 text-[12px] font-medium active:cursor-grabbing"
+      className="min-w-0 cursor-grab overflow-hidden rounded-md border border-border-subtle/80 bg-app px-2 py-2 text-[12px] font-medium active:cursor-grabbing"
       onDoubleClick={() => onTaskClick(task)}
       role="button"
       tabIndex={0}
@@ -253,11 +262,11 @@ function SubtaskCard({
       }}
       title="Drag onto another card or section."
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex min-w-0 flex-col gap-1">
         {task.statusId ? (
           <StatusTag sid={task.statusId} statuses={statuses} />
         ) : null}
-        <span>{task.title}</span>
+        <span className="min-w-0 truncate">{task.title}</span>
       </div>
     </div>
   );

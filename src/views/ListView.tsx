@@ -726,8 +726,7 @@ export function ListView({
       sensors={dndSensors}
       collisionDetection={taskDropCollisionDetection}
       onDragStart={(e) => {
-        const id = parseTaskDragId(e.active.id);
-        setDragTaskId(id);
+        setDragTaskId(parseTaskDragId(e.active.id));
       }}
       onDragCancel={() => setDragTaskId(null)}
       onDragEnd={onDragEndList}
@@ -817,8 +816,21 @@ export function ListView({
       </div>
       <DragOverlay dropAnimation={null}>
         {draggedTask ? (
-          <div className="max-w-md rounded-lg border border-border bg-raised px-3 py-2 text-[13px] font-semibold shadow-lg">
-            {draggedTask.title}
+          <div className="box-border w-max max-w-[min(28rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-border bg-raised px-3 py-2 shadow-lg">
+            <div className="flex max-w-full min-w-0 flex-col gap-1.5">
+              {draggedTask.statusId ? (
+                <StatusTag
+                  sid={draggedTask.statusId}
+                  statuses={statuses}
+                />
+              ) : null}
+              <p
+                className="min-w-0 text-[13px] font-semibold leading-snug text-foreground truncate"
+                title={draggedTask.title || undefined}
+              >
+                {draggedTask.title.trim() || "Untitled task"}
+              </p>
+            </div>
           </div>
         ) : null}
       </DragOverlay>
