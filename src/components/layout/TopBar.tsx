@@ -15,7 +15,7 @@ export function TopBar({ onOpenSearch, onOpenMobileNav }: TopBarProps) {
   const label = initials(user?.displayName || user?.email || 'You')
 
   return (
-    <header className="border-border bg-background sticky top-0 z-20 flex h-header min-w-0 shrink-0 items-center gap-2 border-b py-0 pl-3 pr-4 sm:gap-3">
+    <header className="border-border bg-background sticky top-0 z-20 flex h-header min-w-0 shrink-0 items-center gap-2 border-b py-0 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top,0px)] sm:gap-3">
       {onOpenMobileNav ? (
         <Button
           type="button"

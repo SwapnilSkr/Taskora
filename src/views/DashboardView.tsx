@@ -53,7 +53,7 @@ export function DashboardView({
   const sortedStatuses = [...statuses].sort((a, b)=> a.sortOrder - b.sortOrder)
 
   return (
-    <div className="space-y-6 px-7 pt-6 pb-10">
+    <div className="space-y-6 px-3 pt-4 pb-8 sm:px-5 sm:pt-6 md:px-7 md:pb-10">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card
           className={cn(

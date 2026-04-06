@@ -75,7 +75,7 @@ export function WorkloadView({
   const totalEst = roots.reduce((n, t) => n + (t.estimatedMinutes ?? 0), 0)
 
   return (
-    <div className="space-y-6 px-7 pt-6 pb-10">
+    <div className="space-y-6 px-3 pt-4 pb-8 sm:px-5 sm:pt-6 md:px-7 md:pb-10">
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-0 shadow-none ring-1 ring-foreground/10">
           <CardHeader className="pb-2">

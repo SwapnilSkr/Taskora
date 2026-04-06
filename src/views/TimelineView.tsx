@@ -29,7 +29,7 @@ export function TimelineViewTimeline({
     .sort((a, b) => a.due!.getTime() - b.due!.getTime())
 
   return (
-    <div className="px-7 pt-6 pb-10">
+    <div className="px-3 pt-4 pb-8 sm:px-5 sm:pt-6 md:px-7 md:pb-10">
       <Card className="overflow-hidden border-0 shadow-none ring-1 ring-foreground/10">
         <CardHeader className="space-y-3 border-b border-border/80 bg-card pb-5">
           <div className="flex flex-wrap items-start justify-between gap-3">

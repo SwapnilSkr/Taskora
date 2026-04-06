@@ -85,7 +85,7 @@ export function GanttView({
   const rows = buildRows(tasks)
   if (rows.length === 0) {
     return (
-      <div className="px-7 pt-6 pb-10">
+      <div className="px-3 pt-4 pb-8 sm:px-5 sm:pt-6 md:px-7 md:pb-10">
         <Card className="border-0 py-12 shadow-none ring-1 ring-foreground/10">
           <CardContent className="flex flex-col items-center gap-3 text-center">
             <div
@@ -124,7 +124,7 @@ export function GanttView({
   const gridCols = `minmax(200px,240px) repeat(${totalDays}, minmax(24px, 1fr))`
 
   return (
-    <div className="px-7 pt-6 pb-10">
+    <div className="px-3 pt-4 pb-8 sm:px-5 sm:pt-6 md:px-7 md:pb-10">
       <Card className="overflow-hidden border-0 shadow-none ring-1 ring-foreground/10">
         <CardHeader className="border-b border-border/80 bg-card pb-5">
           <div className="flex flex-wrap items-start justify-between gap-3">

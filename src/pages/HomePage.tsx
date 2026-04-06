@@ -35,7 +35,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="px-8 pb-12 pt-7">
+    <div className="px-4 pb-10 pt-5 sm:px-6 sm:pb-12 sm:pt-7 md:px-8">
       <h1 className="text-foreground mb-2 mt-0 text-[26px] font-bold tracking-tight">
         Home
       </h1>

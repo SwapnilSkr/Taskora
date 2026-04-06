@@ -19,7 +19,7 @@ export function MyTasksPage() {
   } | null>(null)
 
   return (
-    <div className="px-8 pb-12 pt-7">
+    <div className="px-4 pb-10 pt-5 sm:px-6 sm:pb-12 sm:pt-7 md:px-8">
       <h1 className="mb-2 mt-0 text-[26px] font-bold">My tasks</h1>
       <p className="m-0 max-w-[720px] text-muted-foreground">
         Everything assigned to you across projects — similar to Asana &quot;My tasks&quot;.

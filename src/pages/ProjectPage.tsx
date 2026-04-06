@@ -342,16 +342,22 @@ export function ProjectPage() {
     await bulkSetAssignee(uid, pid, [...selectedIds], toMe ? uid : null)
   }
 
+  /** Anchored below the toolbar; full-width inset on phones, right-aligned from sm+. */
+  const filterDropdownClassName =
+    'absolute left-3 right-3 top-14 z-50 mt-1.5 max-h-[min(70vh,calc(100vh-6rem))] overflow-y-auto rounded-lg border border-border bg-card p-1.5 shadow-md sm:left-auto sm:right-6 sm:min-w-[220px] sm:max-w-[min(320px,calc(100vw-1.5rem))]'
+  const filterDropdownWideClassName =
+    'absolute left-3 right-3 top-14 z-50 mt-1.5 max-h-[min(70vh,calc(100vh-6rem))] overflow-y-auto rounded-lg border border-border bg-card p-1.5 shadow-md sm:left-auto sm:right-4 md:right-[120px] sm:min-w-0 sm:max-w-[min(320px,calc(100vw-1.5rem))] md:min-w-sidebar'
+
   return (
     <>
-      <div className="min-w-0 px-7 pb-0 pt-5">
+      <div className="min-w-0 px-3 pb-0 pt-4 sm:px-5 sm:pt-5 md:px-7">
         <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2.5">
           <IconList className="size-5 shrink-0 text-muted-foreground hover:text-foreground" />
           <span
             className="h-3 w-3 shrink-0 rounded-[3px]"
             style={{ background: project.color }}
           />
-          <h1 className="m-0 min-w-0 flex-1 truncate text-[22px] font-semibold tracking-tight">
+          <h1 className="m-0 min-w-0 flex-1 truncate text-lg font-semibold tracking-tight sm:text-[22px]">
             {project.name}
           </h1>
           <button
@@ -409,7 +415,7 @@ export function ProjectPage() {
 
       {activeView === 'list' || activeView === 'board' ? (
         <div
-          className="relative flex min-w-0 flex-wrap items-center gap-2 px-7 py-3.5"
+          className="relative flex min-w-0 flex-wrap items-center gap-2 px-3 py-3 sm:px-5 md:px-7 md:py-3.5"
           ref={popRef}
         >
           <Button
@@ -490,9 +496,7 @@ export function ProjectPage() {
             </button>
           </div>
           {filterOpen === 'sort' ? (
-            <div
-              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-lg border border-border bg-card p-1.5 shadow-md"
-            >
+            <div className={filterDropdownClassName}>
               {(
                 [
                   ['sortOrder', 'Manual / list order'],
@@ -513,9 +517,7 @@ export function ProjectPage() {
             </div>
           ) : null}
           {filterOpen === 'group' ? (
-            <div
-              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-lg border border-border bg-card p-1.5 shadow-md"
-            >
+            <div className={filterDropdownClassName}>
               {(
                 [
                   ['section', 'Section'],
@@ -537,9 +539,7 @@ export function ProjectPage() {
             </div>
           ) : null}
           {filterOpen === 'filter' ? (
-            <div
-              className="absolute right-[120px] top-14 z-50 mt-1.5 min-w-sidebar rounded-lg border border-border bg-card p-1.5 shadow-md"
-            >
+            <div className={filterDropdownWideClassName}>
               <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Status
               </div>
@@ -597,9 +597,7 @@ export function ProjectPage() {
             </div>
           ) : null}
           {filterOpen === 'options' ? (
-            <div
-              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[240px] rounded-lg border border-border bg-card p-1.5 shadow-md"
-            >
+            <div className={filterDropdownClassName}>
               <button
                 type="button"
                 className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
@@ -633,7 +631,7 @@ export function ProjectPage() {
       ) : null}
 
       {activeView === 'list' && multiSelectMode && selectedIds.size > 0 ? (
-        <div className="mx-7 mb-3 flex flex-wrap items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-[13px]">
+        <div className="mx-3 mb-3 flex flex-wrap items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-[13px] sm:mx-5 md:mx-7">
           <span className="mr-1 font-bold">{selectedIds.size} selected</span>
           <Button
             type="button"

@@ -40,7 +40,7 @@ export function OverviewView({
     'Add a project description from settings when available — or capture the charter in a pinned task for now.'
 
   return (
-    <div className="space-y-6 px-7 pt-6 pb-10">
+    <div className="space-y-6 px-3 pt-4 pb-8 sm:px-5 sm:pt-6 md:px-7 md:pb-10">
       <Card className="overflow-hidden border-0 shadow-none ring-1 ring-foreground/10">
         <CardHeader className="flex flex-row flex-wrap items-start gap-4 border-b border-border/80 pb-5">
           <span

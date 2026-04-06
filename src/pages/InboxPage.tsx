@@ -18,8 +18,10 @@ export function InboxPage() {
   } | null>(null)
 
   return (
-    <div style={{ padding: '28px 32px 48px' }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 26 }}>Inbox</h1>
+    <div className="px-4 pb-10 pt-5 sm:px-6 sm:pb-12 sm:pt-7 md:px-8">
+      <h1 className="mb-2 mt-0 text-[22px] font-bold tracking-tight sm:text-[26px]">
+        Inbox
+      </h1>
       <p className="m-0 max-w-[720px] text-muted-foreground">
         Surfaces items needing attention — approvals (Asana Advanced) and blocked tasks. Extend with comment @mentions using the same task activity model.
       </p>

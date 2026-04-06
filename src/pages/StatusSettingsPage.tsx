@@ -86,7 +86,7 @@ export function StatusSettingsPage() {
   }
 
   return (
-    <div className="max-w-[800px] px-8 pb-12 pt-7">
+    <div className="max-w-[800px] px-4 pb-10 pt-5 sm:px-6 sm:pb-12 sm:pt-7 md:px-8">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-foreground mb-2 mt-0 text-[26px] font-bold tracking-tight">

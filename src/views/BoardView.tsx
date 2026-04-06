@@ -72,7 +72,7 @@ export function BoardView({
       onDragCancel={() => setActiveId(null)}
       onDragEnd={(e) => void onDragEnd(e)}
     >
-      <div className="flex items-start gap-3.5 overflow-x-auto px-7 pt-3 pb-10">
+      <div className="flex items-start gap-3 overflow-x-auto px-3 pt-3 pb-8 [-webkit-overflow-scrolling:touch] sm:gap-3.5 sm:px-5 sm:pb-10 md:px-7">
         {sections.map((s) => (
           <Column
             key={s.id}

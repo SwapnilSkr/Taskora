@@ -714,7 +714,7 @@ export function ListView({
       onDragEnd={onDragEndList}
     >
       <div className="min-w-0 max-w-full pb-12">
-        <div className="overflow-x-auto px-7 pt-3 [-ms-overflow-style:auto]">
+        <div className="overflow-x-auto px-3 pt-3 [-ms-overflow-style:auto] sm:px-5 md:px-7">
           <table
             className={clsx(
               "table-fixed w-full min-w-[680px] border-separate border-spacing-0",
