@@ -1,8 +1,9 @@
 import {
   ArrowLeft,
   ArrowRight,
-  Clock,
   CircleHelp,
+  Clock,
+  Menu,
   Search,
   SlidersHorizontal,
   UserPlus,
@@ -15,15 +16,29 @@ import { Kbd } from '@/components/ui/kbd'
 
 type TopBarProps = {
   onOpenSearch: () => void
+  onOpenMobileNav?: () => void
 }
 
-export function TopBar({ onOpenSearch }: TopBarProps) {
+export function TopBar({ onOpenSearch, onOpenMobileNav }: TopBarProps) {
   const { user } = useAuth()
   const label = initials(user?.displayName || user?.email || 'You')
 
   return (
     <header className="border-border bg-background sticky top-0 z-20 flex h-header min-w-0 shrink-0 items-center gap-2 border-b py-0 pl-3 pr-4 sm:gap-3">
-      <div className="flex shrink-0 items-center gap-0.5">
+      {onOpenMobileNav ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="shrink-0 md:hidden"
+          title="Open menu"
+          aria-label="Open menu"
+          onClick={onOpenMobileNav}
+        >
+          <Menu className="size-[18px]" />
+        </Button>
+      ) : null}
+      <div className="hidden shrink-0 items-center gap-0.5 md:flex">
         <Button type="button" variant="ghost" size="icon" title="Back">
           <ArrowLeft className="size-[18px]" />
         </Button>

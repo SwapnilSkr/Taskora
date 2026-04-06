@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Bell,
   ChartColumn,
@@ -27,7 +27,13 @@ const navBtn =
 
 const navActive = 'bg-accent [&_svg]:text-foreground'
 
-export function Sidebar() {
+type SidebarContentProps = {
+  /** Called when the active route changes (e.g. close mobile sheet). */
+  onNavigate?: () => void
+}
+
+/** Shared nav body for desktop rail and mobile sheet */
+export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { user, logout } = useAuth()
   const { prompt } = useModals()
   const nav = useNavigate()
@@ -40,6 +46,13 @@ export function Sidebar() {
     const unsub = subscribeProjects(user.uid, setProjects)
     return () => unsub()
   }, [user])
+
+  const pathWhenMounted = useRef(loc.pathname)
+  useEffect(() => {
+    if (pathWhenMounted.current === loc.pathname) return
+    pathWhenMounted.current = loc.pathname
+    onNavigate?.()
+  }, [loc.pathname, onNavigate])
 
   async function onCreateProject() {
     if (!user) return
@@ -57,119 +70,126 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="border-border bg-sidebar text-sidebar-foreground sticky top-0 flex h-screen w-sidebar shrink-0 flex-col overflow-hidden border-r">
-      <ScrollArea className="h-full px-2.5 pb-4 pt-3">
-        <div className="flex items-center gap-2 px-2 pb-3 pt-1 text-[15px] font-semibold tracking-tight">
-          Taskora
-        </div>
+    <ScrollArea className="h-full min-h-0 px-2.5 pb-4 pt-3">
+      <div className="flex items-center gap-2 px-2 pb-3 pt-1 text-[15px] font-semibold tracking-tight">
+        Taskora
+      </div>
 
-        <Button
-          type="button"
-          className="mb-3.5 w-full rounded-full font-semibold"
-          onClick={onCreateProject}
-        >
-          <Plus className="size-[18px]" />
-          Create
-        </Button>
+      <Button
+        type="button"
+        className="mb-3.5 w-full rounded-full font-semibold"
+        onClick={onCreateProject}
+      >
+        <Plus className="size-[18px]" />
+        Create
+      </Button>
 
-        <NavLink
-          to="/home"
-          className={({ isActive }) => clsx(navBtn, isActive && navActive)}
-        >
-          <Home />
-          <span>Home</span>
-        </NavLink>
-        <NavLink
-          to="/my-tasks"
-          className={({ isActive }) => clsx(navBtn, isActive && navActive)}
-        >
-          <CheckCircle2 />
-          <span>My tasks</span>
-        </NavLink>
-        <NavLink
-          to="/inbox"
-          className={({ isActive }) => clsx(navBtn, isActive && navActive)}
-        >
-          <Bell />
-          <span>Inbox</span>
-        </NavLink>
-        <NavLink
-          to="/status"
-          className={({ isActive }) => clsx(navBtn, isActive && navActive)}
-        >
-          <Settings />
-          <span>Status tags</span>
-        </NavLink>
+      <NavLink
+        to="/home"
+        className={({ isActive }) => clsx(navBtn, isActive && navActive)}
+      >
+        <Home />
+        <span>Home</span>
+      </NavLink>
+      <NavLink
+        to="/my-tasks"
+        className={({ isActive }) => clsx(navBtn, isActive && navActive)}
+      >
+        <CheckCircle2 />
+        <span>My tasks</span>
+      </NavLink>
+      <NavLink
+        to="/inbox"
+        className={({ isActive }) => clsx(navBtn, isActive && navActive)}
+      >
+        <Bell />
+        <span>Inbox</span>
+      </NavLink>
+      <NavLink
+        to="/status"
+        className={({ isActive }) => clsx(navBtn, isActive && navActive)}
+      >
+        <Settings />
+        <span>Status tags</span>
+      </NavLink>
 
-        <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
-          Insights
-        </div>
-        <button type="button" className={navBtn} disabled title="Coming soon">
-          <ChartColumn />
-          <span>Reporting</span>
+      <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
+        Insights
+      </div>
+      <button type="button" className={navBtn} disabled title="Coming soon">
+        <ChartColumn />
+        <span>Reporting</span>
+      </button>
+      <button type="button" className={navBtn} disabled title="Coming soon">
+        <Folder />
+        <span>Portfolios</span>
+      </button>
+      <button type="button" className={navBtn} disabled title="Coming soon">
+        <Target />
+        <span>Goals</span>
+      </button>
+
+      <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
+        Projects
+      </div>
+      {projects.map((p) => (
+        <Link
+          key={p.id}
+          to={`/project/${p.id}/list`}
+          className={clsx(
+            navBtn,
+            loc.pathname.startsWith(`/project/${p.id}`) && navActive,
+          )}
+          aria-current={
+            loc.pathname.startsWith(`/project/${p.id}`) ? 'page' : undefined
+          }
+        >
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+            style={{
+              background: p.color || 'var(--color-project, var(--chart-2))',
+            }}
+          />
+          <span className="truncate">{p.name}</span>
+        </Link>
+      ))}
+
+      <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
+        Team
+      </div>
+      <button
+        type="button"
+        className={navBtn}
+        onClick={() => setTeamOpen((v) => !v)}
+      >
+        {teamOpen ? <ChevronDown /> : <ChevronRight />}
+        <span>Everlore</span>
+      </button>
+
+      <Separator className="my-3 bg-border" />
+
+      <div className="flex flex-col gap-2.5 pb-2">
+        <button type="button" className={clsx(navBtn, 'text-muted-foreground')}>
+          <Mail />
+          Invite teammates
         </button>
-        <button type="button" className={navBtn} disabled title="Coming soon">
-          <Folder />
-          <span>Portfolios</span>
-        </button>
-        <button type="button" className={navBtn} disabled title="Coming soon">
-          <Target />
-          <span>Goals</span>
-        </button>
-
-        <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
-          Projects
-        </div>
-        {projects.map((p) => (
-          <Link
-            key={p.id}
-            to={`/project/${p.id}/list`}
-            className={clsx(
-              navBtn,
-              loc.pathname.startsWith(`/project/${p.id}`) && navActive,
-            )}
-            aria-current={
-              loc.pathname.startsWith(`/project/${p.id}`) ? 'page' : undefined
-            }
-          >
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
-              style={{
-                background: p.color || 'var(--color-project, var(--chart-2))',
-              }}
-            />
-            <span className="truncate">{p.name}</span>
-          </Link>
-        ))}
-
-        <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
-          Team
-        </div>
         <button
           type="button"
-          className={navBtn}
-          onClick={() => setTeamOpen((v) => !v)}
+          className={clsx(navBtn, 'text-muted-foreground')}
+          onClick={() => void logout()}
         >
-          {teamOpen ? <ChevronDown /> : <ChevronRight />}
-          <span>Everlore</span>
+          Sign out
         </button>
+      </div>
+    </ScrollArea>
+  )
+}
 
-        <Separator className="my-3 bg-border" />
-
-        <div className="flex flex-col gap-2.5 pb-2">
-          <button type="button" className={clsx(navBtn, 'text-muted-foreground')}>
-            <Mail />
-            Invite teammates
-          </button>
-          <button
-            type="button"
-            className={clsx(navBtn, 'text-muted-foreground')}
-            onClick={() => void logout()}
-          >
-            Sign out
-          </button>
-        </div>
-      </ScrollArea>
+/** Fixed sidebar for md+ viewports */
+export function SidebarDesktop() {
+  return (
+    <aside className="border-border bg-sidebar text-sidebar-foreground sticky top-0 hidden h-screen w-sidebar shrink-0 overflow-hidden border-r md:flex md:flex-col">
+      <SidebarContent />
     </aside>
   )
 }
