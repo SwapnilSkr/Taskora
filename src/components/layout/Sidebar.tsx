@@ -4,11 +4,8 @@ import {
   Bell,
   ChartColumn,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Folder,
   Home,
-  Mail,
   Plus,
   Settings,
   Target,
@@ -39,7 +36,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const nav = useNavigate()
   const loc = useLocation()
   const [projects, setProjects] = useState<ProjectDoc[]>([])
-  const [teamOpen, setTeamOpen] = useState(true)
 
   useEffect(() => {
     if (!user) return
@@ -154,25 +150,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         </Link>
       ))}
 
-      <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
-        Team
-      </div>
-      <button
-        type="button"
-        className={navBtn}
-        onClick={() => setTeamOpen((v) => !v)}
-      >
-        {teamOpen ? <ChevronDown /> : <ChevronRight />}
-        <span>Everlore</span>
-      </button>
-
       <Separator className="my-3 bg-border" />
 
       <div className="flex flex-col gap-2.5 pb-2">
-        <button type="button" className={clsx(navBtn, 'text-muted-foreground')}>
-          <Mail />
-          Invite teammates
-        </button>
         <button
           type="button"
           className={clsx(navBtn, 'text-muted-foreground')}

@@ -31,9 +31,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   IconCalendar,
   IconChevronDown,
@@ -50,14 +56,6 @@ import {
 
 export type GroupMode = "section" | "assignee" | "due" | "status" | "priority";
 export type SortMode = "sortOrder" | "dueDate" | "priority" | "name";
-
-type Pop =
-  | null
-  | { k: "assign"; taskId: string }
-  | { k: "start"; taskId: string }
-  | { k: "due"; taskId: string }
-  | { k: "prio"; taskId: string }
-  | { k: "statuspick"; taskId: string };
 
 type Props = {
   sections: SectionDoc[];
@@ -413,23 +411,11 @@ export function ListView({
     const patch = resolveTaskDrop(tasksForMove, draggedId, overRaw);
     if (patch) onMoveTask(draggedId, patch);
   }
-  const [pop, setPop] = useState<Pop>(null);
   const [inlineSub, setInlineSub] = useState<{
     parentId: string;
     sectionId: string;
   } | null>(null);
   const subInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!pop) return;
-    function close(e: MouseEvent) {
-      const el = e.target as HTMLElement;
-      if (el.closest("[data-popover-root]")) return;
-      setPop(null);
-    }
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [pop]);
 
   useEffect(() => {
     if (inlineSub) subInputRef.current?.focus();
@@ -537,8 +523,6 @@ export function ListView({
                     uid={uid}
                     multiSelectMode={multiSelectMode}
                     selectedIds={selectedIds}
-                    pop={pop}
-                    setPop={setPop}
                     onToggleSelect={onToggleSelect}
                     onTaskClick={onTaskClick}
                     onStatusChange={onStatusChange}
@@ -650,8 +634,6 @@ export function ListView({
                     uid={uid}
                     multiSelectMode={multiSelectMode}
                     selectedIds={selectedIds}
-                    pop={pop}
-                    setPop={setPop}
                     onToggleSelect={onToggleSelect}
                     onTaskClick={onTaskClick}
                     onStatusChange={onStatusChange}
@@ -841,8 +823,6 @@ export function ListView({
 function TaskRowMetaColumns({
   t,
   uid,
-  pop,
-  setPop,
   subtaskQuickAdd,
   onAssign,
   onStartChange,
@@ -855,8 +835,6 @@ function TaskRowMetaColumns({
 }: {
   t: TaskDoc;
   uid: string;
-  pop: Pop;
-  setPop: (p: Pop) => void;
   subtaskQuickAdd: { count: number; onAdd: () => void } | null;
   onAssign: (taskId: string, assigneeId: string | null) => void;
   onStartChange: (taskId: string, ymd: string | null) => void;
@@ -886,12 +864,7 @@ function TaskRowMetaColumns({
         </div>
       </td>
       {subtaskQuickAdd ? (
-        <td
-          className="align-middle"
-          data-popover-root
-          onClick={stopProp}
-          onKeyDown={stopProp}
-        >
+        <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
           <div className="flex min-h-9 items-center">
             <button
               type="button"
@@ -925,218 +898,170 @@ function TaskRowMetaColumns({
           </div>
         </td>
       )}
-      <td
-        className="align-middle"
-        style={{ position: "relative" }}
-        data-popover-root
-        onClick={stopProp}
-        onKeyDown={stopProp}
-      >
+      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
         <div className="flex min-h-9 items-center">
-          <button
-            type="button"
-            className={clsx(
-              "inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
-              t.assigneeId && "is-set",
-            )}
-          onClick={() =>
-            setPop(
-              pop?.k === "assign" && pop.taskId === t.id
-                ? null
-                : { k: "assign", taskId: t.id },
-            )
-          }
-        >
-            <IconUser width={14} height={14} className="shrink-0" />
-            <span className="truncate">{assigneeLabel}</span>
-          </button>
-        </div>
-        {pop?.k === "assign" && pop.taskId === t.id ? (
-          <div
-            className="absolute left-0 top-[calc(100%+4px)] z-50 flex min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-            data-popover-root
-          >
-            <button
-              type="button"
-              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-              onClick={() => {
-                onAssign(t.id, uid);
-                setPop(null);
-              }}
-            >
-              Assign to me
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-              onClick={() => {
-                onAssign(t.id, null);
-                setPop(null);
-              }}
-            >
-              Unassigned
-            </button>
-          </div>
-        ) : null}
-      </td>
-      <td
-        className="align-middle"
-        style={{ position: "relative" }}
-        data-popover-root
-        onClick={stopProp}
-        onKeyDown={stopProp}
-      >
-        <div className="flex min-h-9 items-center">
-          <button
-            type="button"
-            className={clsx(
-              "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
-              start && "is-set",
-            )}
-          onClick={() =>
-            setPop(
-              pop?.k === "start" && pop.taskId === t.id
-                ? null
-                : { k: "start", taskId: t.id },
-            )
-          }
-        >
-            <IconCalendar width={14} height={14} className="shrink-0" />
-            <span className="truncate">{fmtDate(start)}</span>
-          </button>
-        </div>
-        {pop?.k === "start" && pop.taskId === t.id ? (
-          <div
-            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-            data-popover-root
-          >
-            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Start date
-            </div>
-            <input
-              type="date"
-              className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
-              defaultValue={dateToInputValue(start)}
-              onChange={(e) => onStartChange(t.id, e.target.value || null)}
-            />
-            <button
-              type="button"
-              className="mt-1.5 cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
-              onClick={() => {
-                onStartChange(t.id, null);
-                setPop(null);
-              }}
-            >
-              Clear start date
-            </button>
-          </div>
-        ) : null}
-      </td>
-      <td
-        className="align-middle"
-        style={{ position: "relative" }}
-        data-popover-root
-        onClick={stopProp}
-        onKeyDown={stopProp}
-      >
-        <div className="flex min-h-9 items-center">
-          <button
-            type="button"
-            className={clsx(
-              "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
-              due && "is-set",
-            )}
-          onClick={() =>
-            setPop(
-              pop?.k === "due" && pop.taskId === t.id
-                ? null
-                : { k: "due", taskId: t.id },
-            )
-          }
-        >
-            <IconCalendar width={14} height={14} className="shrink-0" />
-            <span
-              className={clsx(
-                "truncate",
-                dueState !== "none" && "font-medium normal-case",
-                dueState === "overdue" && "text-soft-danger",
-                dueState === "soon" && "text-prio-med-fg",
-              )}
-            >
-              {fmtDate(due)}
-            </span>
-          </button>
-        </div>
-        {pop?.k === "due" && pop.taskId === t.id ? (
-          <div
-            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-            data-popover-root
-          >
-            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Due date
-            </div>
-            <input
-              type="date"
-              className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
-              defaultValue={dateToInputValue(due)}
-              onChange={(e) => onDueChange(t.id, e.target.value || null)}
-            />
-            <button
-              type="button"
-              className="mt-1.5 cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
-              onClick={() => {
-                onDueChange(t.id, null);
-                setPop(null);
-              }}
-            >
-              Clear due date
-            </button>
-          </div>
-        ) : null}
-      </td>
-      <td
-        className="align-middle"
-        style={{ position: "relative" }}
-        data-popover-root
-        onClick={stopProp}
-        onKeyDown={stopProp}
-      >
-        <div className="flex min-h-9 items-center">
-          <button
-            type="button"
-            className="cursor-pointer rounded-pill border border-border-subtle bg-app px-2.5 py-1 text-[11px] font-bold uppercase leading-none tracking-wide text-fg data-[p=low]:border-transparent data-[p=low]:bg-prio-low-bg data-[p=low]:text-prio-low-fg data-[p=medium]:border-transparent data-[p=medium]:bg-prio-med-bg data-[p=medium]:text-prio-med-fg data-[p=high]:border-transparent data-[p=high]:bg-prio-high-bg data-[p=high]:text-prio-high-fg data-[p=urgent]:border-transparent data-[p=urgent]:bg-prio-urgent-bg data-[p=urgent]:text-prio-urgent-fg"
-            data-p={t.priority}
-          onClick={() =>
-            setPop(
-              pop?.k === "prio" && pop.taskId === t.id
-                ? null
-                : { k: "prio", taskId: t.id },
-            )
-          }
-          >
-            {t.priority}
-          </button>
-        </div>
-        {pop?.k === "prio" && pop.taskId === t.id ? (
-          <div
-            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-            data-popover-root
-          >
-            {prios.map((p) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button
-                key={p}
                 type="button"
-                className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-                onClick={() => {
-                  onPriorityChange(t.id, p);
-                  setPop(null);
-                }}
+                className={clsx(
+                  "inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground transition-colors duration-120 outline-none hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+                  t.assigneeId && "is-set",
+                )}
+                aria-label="Assign task"
               >
-                {p}
+                <IconUser width={14} height={14} className="shrink-0" />
+                <span className="truncate">{assigneeLabel}</span>
               </button>
-            ))}
-          </div>
-        ) : null}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={4}
+              collisionPadding={8}
+              className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
+            >
+              <DropdownMenuItem
+                className="text-[13px]"
+                onSelect={() => onAssign(t.id, uid)}
+              >
+                Assign to me
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-[13px]"
+                onSelect={() => onAssign(t.id, null)}
+              >
+                Unassigned
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </td>
+      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
+        <div className="flex min-h-9 items-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={clsx(
+                  "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+                  start && "is-set",
+                )}
+                aria-label="Start date"
+              >
+                <IconCalendar width={14} height={14} className="shrink-0" />
+                <span className="truncate">{fmtDate(start)}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={4}
+              collisionPadding={8}
+              className="w-auto min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] gap-1.5 p-2"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Start date
+              </div>
+              <input
+                key={`${t.id}-start-${t.startDate ?? ""}`}
+                type="date"
+                className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
+                defaultValue={dateToInputValue(start)}
+                onChange={(e) => onStartChange(t.id, e.target.value || null)}
+              />
+              <button
+                type="button"
+                className="cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
+                onClick={() => onStartChange(t.id, null)}
+              >
+                Clear start date
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </td>
+      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
+        <div className="flex min-h-9 items-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={clsx(
+                  "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+                  due && "is-set",
+                )}
+                aria-label="Due date"
+              >
+                <IconCalendar width={14} height={14} className="shrink-0" />
+                <span
+                  className={clsx(
+                    "truncate",
+                    dueState !== "none" && "font-medium normal-case",
+                    dueState === "overdue" && "text-soft-danger",
+                    dueState === "soon" && "text-prio-med-fg",
+                  )}
+                >
+                  {fmtDate(due)}
+                </span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={4}
+              collisionPadding={8}
+              className="w-auto min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] gap-1.5 p-2"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Due date
+              </div>
+              <input
+                key={`${t.id}-due-${t.dueDate ?? ""}`}
+                type="date"
+                className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
+                defaultValue={dateToInputValue(due)}
+                onChange={(e) => onDueChange(t.id, e.target.value || null)}
+              />
+              <button
+                type="button"
+                className="cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
+                onClick={() => onDueChange(t.id, null)}
+              >
+                Clear due date
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </td>
+      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
+        <div className="flex min-h-9 items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="cursor-pointer rounded-pill border border-border-subtle bg-app px-2.5 py-1 text-[11px] font-bold uppercase leading-none tracking-wide text-fg outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[p=low]:border-transparent data-[p=low]:bg-prio-low-bg data-[p=low]:text-prio-low-fg data-[p=medium]:border-transparent data-[p=medium]:bg-prio-med-bg data-[p=medium]:text-prio-med-fg data-[p=high]:border-transparent data-[p=high]:bg-prio-high-bg data-[p=high]:text-prio-high-fg data-[p=urgent]:border-transparent data-[p=urgent]:bg-prio-urgent-bg data-[p=urgent]:text-prio-urgent-fg"
+                data-p={t.priority}
+                aria-label="Priority"
+              >
+                {t.priority}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={4}
+              collisionPadding={8}
+              className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
+            >
+              {prios.map((p) => (
+                <DropdownMenuItem
+                  key={p}
+                  className="text-[13px] capitalize"
+                  onSelect={() => onPriorityChange(t.id, p)}
+                >
+                  {p}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </td>
       <td
         className="align-middle"
@@ -1194,85 +1119,63 @@ function TaskRowMetaColumns({
 function TaskStatusPickCell({
   t,
   statuses,
-  pop,
-  setPop,
   onStatusChange,
 }: {
   t: TaskDoc;
   statuses: StatusDoc[];
-  pop: Pop;
-  setPop: (p: Pop) => void;
   onStatusChange: (taskId: string, statusId: string | null) => void;
 }) {
-  const open = pop?.k === "statuspick" && pop.taskId === t.id;
   const ordered = [...statuses].sort((a, b) => a.sortOrder - b.sortOrder);
   return (
     <td
       className="align-middle"
-      style={{ position: "relative" }}
-      data-popover-root
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
       <div className="flex min-h-9 items-center justify-center">
-        <button
-          type="button"
-          className="size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
-          data-done={t.completed ? "true" : "false"}
-          title="Change status"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          onClick={(e) => {
-            e.stopPropagation();
-            setPop(open ? null : { k: "statuspick", taskId: t.id });
-          }}
-        />
-      </div>
-      {open ? (
-        <div
-          className="absolute left-0 top-[calc(100%+4px)] z-50 flex max-h-[min(320px,70vh)] min-w-[200px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 overflow-y-auto rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-          data-popover-root
-          role="listbox"
-          aria-label="Task status"
-        >
-          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Status
-          </div>
-          <button
-            type="button"
-            role="option"
-            aria-selected={t.statusId === null}
-            className="flex w-full items-center gap-2 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-            onClick={() => {
-              onStatusChange(t.id, null);
-              setPop(null);
-            }}
-          >
-            <span className="inline-block size-2.5 shrink-0 rounded-sm bg-border-subtle" />
-            No status
-          </button>
-          {ordered.map((s) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button
-              key={s.id}
               type="button"
-              role="option"
-              aria-selected={t.statusId === s.id}
-              className="flex w-full items-center gap-2 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-              onClick={() => {
-                onStatusChange(t.id, s.id);
-                setPop(null);
-              }}
+              className="size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
+              data-done={t.completed ? "true" : "false"}
+              title="Change status"
+              aria-label="Change task status"
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            sideOffset={4}
+            collisionPadding={8}
+            className="max-h-[min(320px,70vh)] min-w-[200px] max-w-[min(320px,calc(100vw-1.5rem))] overflow-y-auto"
+          >
+            <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Status
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              className="cursor-pointer text-[13px]"
+              onSelect={() => onStatusChange(t.id, null)}
             >
-              <span
-                className="inline-block size-2.5 shrink-0 rounded-sm"
-                style={{ backgroundColor: s.color }}
-                aria-hidden
-              />
-              {s.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
+              <span className="inline-block size-2.5 shrink-0 rounded-sm bg-border-subtle" />
+              No status
+            </DropdownMenuItem>
+            {ordered.map((s) => (
+              <DropdownMenuItem
+                key={s.id}
+                className="cursor-pointer text-[13px]"
+                onSelect={() => onStatusChange(t.id, s.id)}
+              >
+                <span
+                  className="inline-block size-2.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: s.color }}
+                  aria-hidden
+                />
+                {s.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </td>
   );
 }
@@ -1283,8 +1186,6 @@ function TaskRow({
   uid,
   multiSelectMode,
   selectedIds,
-  pop,
-  setPop,
   onToggleSelect,
   onTaskClick,
   onStatusChange,
@@ -1303,8 +1204,6 @@ function TaskRow({
   uid: string;
   multiSelectMode: boolean;
   selectedIds: Set<string>;
-  pop: Pop;
-  setPop: (p: Pop) => void;
   onToggleSelect: (taskId: string) => void;
   onTaskClick: (t: TaskDoc) => void;
   onStatusChange: (taskId: string, statusId: string | null) => void;
@@ -1352,8 +1251,6 @@ function TaskRow({
           <TaskStatusPickCell
             t={t}
             statuses={statuses}
-            pop={pop}
-            setPop={setPop}
             onStatusChange={onStatusChange}
           />
           <TaskTitleDropCell
@@ -1367,8 +1264,6 @@ function TaskRow({
           <TaskRowMetaColumns
             t={t}
             uid={uid}
-            pop={pop}
-            setPop={setPop}
             subtaskQuickAdd={{
               count: subtasks.length,
               onAdd: onOpenSubtask,
@@ -1417,8 +1312,6 @@ function TaskRow({
               <TaskStatusPickCell
                 t={st}
                 statuses={statuses}
-                pop={pop}
-                setPop={setPop}
                 onStatusChange={onStatusChange}
               />
               <td
@@ -1441,8 +1334,6 @@ function TaskRow({
               <TaskRowMetaColumns
                 t={st}
                 uid={uid}
-                pop={pop}
-                setPop={setPop}
                 subtaskQuickAdd={null}
                 onAssign={onAssign}
                 onStartChange={onStartChange}
