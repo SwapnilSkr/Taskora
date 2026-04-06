@@ -24,6 +24,7 @@ type Pop =
   | { k: "start"; taskId: string }
   | { k: "due"; taskId: string }
   | { k: "prio"; taskId: string }
+  | { k: "statuspick"; taskId: string }
   | { k: "taskmenu"; taskId: string }
   | { k: "sectionmenu"; sectionId: string };
 
@@ -39,7 +40,7 @@ type Props = {
   onToggleSelect: (taskId: string) => void;
   onSetManySelected: (taskIds: string[], selected: boolean) => void;
   onTaskClick: (t: TaskDoc) => void;
-  onToggleComplete: (t: TaskDoc) => void;
+  onStatusChange: (taskId: string, statusId: string | null) => void;
   onAddTask: (sectionId: string) => void;
   onAssign: (taskId: string, assigneeId: string | null) => void;
   onStartChange: (taskId: string, ymd: string | null) => void;
@@ -172,7 +173,7 @@ export function ListView({
   onToggleSelect,
   onSetManySelected,
   onTaskClick,
-  onToggleComplete,
+  onStatusChange,
   onAddTask,
   onAssign,
   onStartChange,
@@ -308,7 +309,7 @@ export function ListView({
                     setPop={setPop}
                     onToggleSelect={onToggleSelect}
                     onTaskClick={onTaskClick}
-                    onToggleComplete={onToggleComplete}
+                    onStatusChange={onStatusChange}
                     onAssign={onAssign}
                     onStartChange={onStartChange}
                     onDueChange={onDueChange}
@@ -417,7 +418,7 @@ export function ListView({
                     setPop={setPop}
                     onToggleSelect={onToggleSelect}
                     onTaskClick={onTaskClick}
-                    onToggleComplete={onToggleComplete}
+                    onStatusChange={onStatusChange}
                     onAssign={onAssign}
                     onStartChange={onStartChange}
                     onDueChange={onDueChange}
@@ -903,6 +904,89 @@ function TaskRowMetaColumns({
   );
 }
 
+function TaskStatusPickCell({
+  t,
+  statuses,
+  pop,
+  setPop,
+  onStatusChange,
+}: {
+  t: TaskDoc;
+  statuses: StatusDoc[];
+  pop: Pop;
+  setPop: (p: Pop) => void;
+  onStatusChange: (taskId: string, statusId: string | null) => void;
+}) {
+  const open = pop?.k === "statuspick" && pop.taskId === t.id;
+  const ordered = [...statuses].sort((a, b) => a.sortOrder - b.sortOrder);
+  return (
+    <td
+      style={{ verticalAlign: "middle", position: "relative" }}
+      data-popover-root
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="mx-auto block size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
+        data-done={t.completed ? "true" : "false"}
+        title="Change status"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setPop(open ? null : { k: "statuspick", taskId: t.id });
+        }}
+      />
+      {open ? (
+        <div
+          className="absolute left-0 top-[calc(100%+4px)] z-40 flex max-h-[min(320px,70vh)] min-w-[200px] flex-col gap-0.5 overflow-y-auto rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+          data-popover-root
+          role="listbox"
+          aria-label="Task status"
+        >
+          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Status
+          </div>
+          <button
+            type="button"
+            role="option"
+            aria-selected={t.statusId === null}
+            className="flex w-full items-center gap-2 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+            onClick={() => {
+              onStatusChange(t.id, null);
+              setPop(null);
+            }}
+          >
+            <span className="inline-block size-2.5 shrink-0 rounded-sm bg-border-subtle" />
+            No status
+          </button>
+          {ordered.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="option"
+              aria-selected={t.statusId === s.id}
+              className="flex w-full items-center gap-2 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+              onClick={() => {
+                onStatusChange(t.id, s.id);
+                setPop(null);
+              }}
+            >
+              <span
+                className="inline-block size-2.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: s.color }}
+                aria-hidden
+              />
+              {s.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </td>
+  );
+}
+
 function TaskRow({
   task: t,
   subtasks,
@@ -913,7 +997,7 @@ function TaskRow({
   setPop,
   onToggleSelect,
   onTaskClick,
-  onToggleComplete,
+  onStatusChange,
   onAssign,
   onStartChange,
   onDueChange,
@@ -933,7 +1017,7 @@ function TaskRow({
   setPop: (p: Pop) => void;
   onToggleSelect: (taskId: string) => void;
   onTaskClick: (t: TaskDoc) => void;
-  onToggleComplete: (t: TaskDoc) => void;
+  onStatusChange: (taskId: string, statusId: string | null) => void;
   onAssign: (taskId: string, assigneeId: string | null) => void;
   onStartChange: (taskId: string, ymd: string | null) => void;
   onDueChange: (taskId: string, ymd: string | null) => void;
@@ -967,18 +1051,13 @@ function TaskRow({
             />
           </td>
         ) : null}
-        <td style={{ verticalAlign: "middle" }}>
-          <button
-            type="button"
-            className="mx-auto block size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
-            data-done={t.completed ? "true" : "false"}
-            title={t.completed ? "Mark incomplete" : "Mark complete"}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleComplete(t);
-            }}
-          />
-        </td>
+        <TaskStatusPickCell
+          t={t}
+          statuses={statuses}
+          pop={pop}
+          setPop={setPop}
+          onStatusChange={onStatusChange}
+        />
         <td
           onClick={() => onTaskClick(t)}
           onKeyDown={handleTaskKeyDown}
@@ -1029,17 +1108,13 @@ function TaskRow({
                 />
               </td>
             ) : null}
-            <td style={{ verticalAlign: "middle" }}>
-              <button
-                type="button"
-                className="mx-auto block size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
-                data-done={st.completed ? "true" : "false"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleComplete(st);
-                }}
-              />
-            </td>
+            <TaskStatusPickCell
+              t={st}
+              statuses={statuses}
+              pop={pop}
+              setPop={setPop}
+              onStatusChange={onStatusChange}
+            />
             <td
               onClick={() => onTaskClick(st)}
               onKeyDown={handleSubKeyDown}

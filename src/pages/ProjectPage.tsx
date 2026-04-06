@@ -706,12 +706,11 @@ export function ProjectPage() {
           onToggleSelect={toggleSelect}
           onSetManySelected={setManySelected}
           onTaskClick={setSelected}
-          onToggleComplete={(t) => {
-            const comp = statuses.find((s) => s.isCompleted)
-            const def = statuses.find((s) => s.isDefault)
-            void updateTask(uid, pid, t.id, {
-              completed: !t.completed,
-              statusId: !t.completed ? (comp?.id ?? null) : (def?.id ?? null),
+          onStatusChange={(taskId, statusId) => {
+            const s = statuses.find((x) => x.id === statusId)
+            void updateTask(uid, pid, taskId, {
+              statusId,
+              completed: s?.isCompleted ?? false,
             })
           }}
           onAddTask={(sid) => void onAddTask(sid)}
