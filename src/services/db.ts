@@ -24,6 +24,11 @@ import type {
   SectionDoc,
   TaskDoc,
 } from '../types/models'
+import {
+  extractMarkdownImageUrls,
+  normalizeDownloadUrl,
+  removeMarkdownImagesWithUrl,
+} from '../utils/imagePaste'
 import type { Timestamp } from 'firebase/firestore'
 
 const ts = () => serverTimestamp()
@@ -537,6 +542,129 @@ export async function addComment(
   })
 }
 
+/** Deletes Storage objects + attachment docs for each URL (matched after normalize). */
+async function deleteAttachmentsForUrls(
+  uid: string,
+  projectId: string,
+  taskId: string,
+  rawUrls: string[],
+): Promise<void> {
+  const realUrls = rawUrls.filter((u) => !u.startsWith('blob:'))
+  if (realUrls.length === 0) return
+  const normTargets = new Set(realUrls.map(normalizeDownloadUrl))
+  const snap = await getDocs(attachmentsCol(uid, projectId, taskId))
+  const bucket = getFirebaseStorage()
+  for (const d of snap.docs) {
+    const data = d.data() as { downloadURL?: string; storagePath?: string }
+    const docUrl = normalizeDownloadUrl(String(data.downloadURL ?? ''))
+    if (!normTargets.has(docUrl)) continue
+    if (data.storagePath) {
+      try {
+        await deleteObject(storageRef(bucket, data.storagePath))
+      } catch {
+        /* already removed */
+      }
+    }
+    await deleteDoc(d.ref)
+  }
+}
+
+/**
+ * Updates description and deletes Storage + attachment docs for images removed from text.
+ */
+export async function updateTaskDescriptionWithImageCleanup(
+  uid: string,
+  projectId: string,
+  taskId: string,
+  previousDescription: string,
+  nextDescription: string,
+): Promise<void> {
+  const oldUrls = extractMarkdownImageUrls(previousDescription)
+  const newNorm = new Set(
+    extractMarkdownImageUrls(nextDescription).map(normalizeDownloadUrl),
+  )
+  const toDelete = oldUrls.filter(
+    (u) => !newNorm.has(normalizeDownloadUrl(u)),
+  )
+  await updateTask(uid, projectId, taskId, { description: nextDescription })
+  await deleteAttachmentsForUrls(uid, projectId, taskId, toDelete)
+  await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
+}
+
+/** Deletes comment and any images embedded in it from Storage + attachments. */
+export async function deleteComment(
+  uid: string,
+  projectId: string,
+  taskId: string,
+  commentId: string,
+): Promise<void> {
+  const cref = doc(commentsCol(uid, projectId, taskId), commentId)
+  const snap = await getDoc(cref)
+  const text = snap.exists()
+    ? String((snap.data() as { text?: string }).text ?? '')
+    : ''
+  const urls = extractMarkdownImageUrls(text)
+  await deleteAttachmentsForUrls(uid, projectId, taskId, urls)
+  await deleteDoc(cref)
+  await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
+}
+
+async function scrubDownloadUrlFromTaskContent(
+  uid: string,
+  projectId: string,
+  taskId: string,
+  downloadURL: string,
+): Promise<void> {
+  const tref = taskRef(uid, projectId, taskId)
+  const taskSnap = await getDoc(tref)
+  if (!taskSnap.exists()) return
+  const desc = String(
+    (taskSnap.data() as { description?: string }).description ?? '',
+  )
+  const nextDesc = removeMarkdownImagesWithUrl(desc, downloadURL)
+  if (nextDesc !== desc) {
+    await updateDoc(tref, { description: nextDesc, updatedAt: ts() })
+  }
+  const cq = await getDocs(commentsCol(uid, projectId, taskId))
+  for (const cd of cq.docs) {
+    const text = String((cd.data() as { text?: string }).text ?? '')
+    if (!text.trim()) continue
+    const cleaned = removeMarkdownImagesWithUrl(text, downloadURL)
+    if (cleaned === text) continue
+    const nextTrim = cleaned.trim()
+    if (nextTrim === '') {
+      await deleteDoc(cd.ref)
+    } else {
+      await updateDoc(cd.ref, { text: nextTrim })
+    }
+  }
+}
+
+/** Deletes one attachment from Storage + Firestore and strips that image from description/comments. */
+export async function deleteTaskAttachment(
+  uid: string,
+  projectId: string,
+  taskId: string,
+  attachmentId: string,
+): Promise<void> {
+  const aref = doc(attachmentsCol(uid, projectId, taskId), attachmentId)
+  const snap = await getDoc(aref)
+  if (!snap.exists()) return
+  const data = snap.data() as { downloadURL?: string; storagePath?: string }
+  const downloadURL = String(data.downloadURL ?? '')
+  const path = data.storagePath
+  if (path) {
+    try {
+      await deleteObject(storageRef(getFirebaseStorage(), path))
+    } catch {
+      /* already removed */
+    }
+  }
+  await deleteDoc(aref)
+  await scrubDownloadUrlFromTaskContent(uid, projectId, taskId, downloadURL)
+  await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
+}
+
 export function subscribeAttachments(
   uid: string,
   projectId: string,
@@ -577,11 +705,3 @@ export async function saveAttachmentMeta(
   })
 }
 
-export async function deleteAttachmentDoc(
-  uid: string,
-  projectId: string,
-  taskId: string,
-  attachmentId: string,
-): Promise<void> {
-  await deleteDoc(doc(attachmentsCol(uid, projectId, taskId), attachmentId))
-}

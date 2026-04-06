@@ -130,6 +130,12 @@ export function ProjectPage() {
     setSelectedIds(new Set())
   }, [projectId])
 
+  /** Canonical task row from the live snapshot so the detail panel never stays stale after saves. */
+  const taskForDetailPanel = useMemo(() => {
+    if (!selected) return null
+    return tasks.find((x) => x.id === selected.id) ?? selected
+  }, [tasks, selected])
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       if (filterHideCompleted && t.completed) return false
@@ -700,14 +706,16 @@ export function ProjectPage() {
         Add section
       </button>
 
-      {selected ? (
+      {selected && taskForDetailPanel ? (
         <TaskDetailPanel
           uid={uid}
           projectId={pid}
-          task={selected}
+          task={taskForDetailPanel}
           allTasks={tasks}
           onClose={() => setSelected(null)}
-          onSaved={() => setSelected({ ...selected })}
+          onSaved={() => {
+            /* Panel reads `taskForDetailPanel` from the live `tasks` subscription. */
+          }}
         />
       ) : null}
     </>

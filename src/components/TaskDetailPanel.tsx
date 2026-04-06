@@ -1,18 +1,31 @@
 import { Timestamp } from 'firebase/firestore'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useModals } from '../context/ModalContext'
 import {
+  DescriptionWysiwyg,
+  type DescriptionWysiwygRef,
+} from './DescriptionWysiwyg'
+import { RichTextContent } from './RichTextContent'
+import {
   addComment,
   createTask,
+  deleteComment,
   deleteTask,
+  deleteTaskAttachment,
   subscribeAttachments,
   subscribeComments,
   updateTask,
+  updateTaskDescriptionWithImageCleanup,
 } from '../services/db'
-import { uploadTaskFile } from '../services/storage'
+import { uploadTaskFile, uploadTaskImageBlob } from '../services/storage'
 import type { AttachmentMeta, CommentDoc, TaskDoc } from '../types/models'
 import { fmtDateFull, tsToDate } from '../utils/format'
+import {
+  firstImageFromClipboard,
+  markdownImageLine,
+  textHasMarkdownImages,
+} from '../utils/imagePaste'
 import './layout/layout.css'
 
 type Props = {
@@ -56,6 +69,22 @@ export function TaskDetailPanel({
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [commentText, setCommentText] = useState('')
   const [tagDraft, setTagDraft] = useState('')
+  const [imageUploadBusy, setImageUploadBusy] = useState<'idle' | 'desc' | 'comment'>(
+    'idle',
+  )
+  const descImageInputRef = useRef<HTMLInputElement>(null)
+  const commentImageInputRef = useRef<HTMLInputElement>(null)
+  const descWysiwygRef = useRef<DescriptionWysiwygRef>(null)
+  /** Last description persisted (to compute orphaned images vs edits). */
+  const lastCommittedDescription = useRef('')
+
+  useEffect(() => {
+    if (!task) {
+      lastCommittedDescription.current = ''
+      return
+    }
+    lastCommittedDescription.current = task.description
+  }, [task?.id])
 
   useEffect(() => {
     if (!task) return
@@ -78,6 +107,18 @@ export function TaskDetailPanel({
 
   async function savePatch(patch: Partial<TaskDoc>) {
     await updateTask(uid, projectId, t.id, patch)
+    onSaved()
+  }
+
+  async function saveDescriptionNext(nextDescription: string) {
+    await updateTaskDescriptionWithImageCleanup(
+      uid,
+      projectId,
+      t.id,
+      lastCommittedDescription.current,
+      nextDescription,
+    )
+    lastCommittedDescription.current = nextDescription
     onSaved()
   }
 
@@ -132,12 +173,68 @@ export function TaskDetailPanel({
         <div className="panel-body">
           {tab === 'details' ? (
             <>
-              <div className="field-label">Description</div>
-              <textarea
-                className="textarea"
-                value={t.description}
+              <div className="field-label field-label-row">
+                <span>Description</span>
+                <span className="field-hint">Paste or attach images (⌘V / Ctrl+V)</span>
+                <input
+                  ref={descImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  aria-hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    e.target.value = ''
+                    if (!f?.type.startsWith('image/')) return
+                    void (async () => {
+                      setImageUploadBusy('desc')
+                      try {
+                        const url = await uploadTaskImageBlob(
+                          uid,
+                          projectId,
+                          t.id,
+                          f,
+                          f.name,
+                        )
+                        descWysiwygRef.current?.appendImageMarkdown(
+                          markdownImageLine(url, f.name.slice(0, 40)),
+                        )
+                      } finally {
+                        setImageUploadBusy('idle')
+                      }
+                    })()
+                  }}
+                />
+                <button
+                  type="button"
+                  className="linkish-btn-inline"
+                  disabled={imageUploadBusy !== 'idle'}
+                  onClick={() => descImageInputRef.current?.click()}
+                >
+                  Attach image
+                </button>
+              </div>
+              <DescriptionWysiwyg
+                ref={descWysiwygRef}
+                markdown={t.description}
+                onMarkdownChange={(md) => void saveDescriptionNext(md)}
+                disabled={false}
                 placeholder="What is this task about?"
-                onChange={(e) => void savePatch({ description: e.target.value })}
+                className="textarea"
+                onPasteImageBlob={async (blob) => {
+                  setImageUploadBusy('desc')
+                  try {
+                    return await uploadTaskImageBlob(
+                      uid,
+                      projectId,
+                      t.id,
+                      blob,
+                      'paste',
+                    )
+                  } finally {
+                    setImageUploadBusy('idle')
+                  }
+                }}
               />
 
               <div className="row-2">
@@ -393,32 +490,145 @@ export function TaskDetailPanel({
               {comments.map((c) => (
                 <div
                   key={c.id}
-                  style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    fontSize: 13,
-                  }}
+                  className="comment-row"
                 >
-                  <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>
-                    {c.authorName || 'Teammate'} ·{' '}
-                    {fmtDateFull(tsToDate(c.createdAt))}
+                  <div className="comment-row-meta">
+                    <span>
+                      {c.authorName || 'Teammate'} ·{' '}
+                      {fmtDateFull(tsToDate(c.createdAt))}
+                    </span>
+                    <button
+                      type="button"
+                      className="linkish-btn-inline comment-delete"
+                      onClick={() => {
+                        void (async () => {
+                          const ok = await confirm({
+                            title: 'Delete comment',
+                            message:
+                              'Delete this comment and any images attached to it from Storage? This cannot be undone.',
+                            confirmLabel: 'Delete',
+                            danger: true,
+                          })
+                          if (!ok) return
+                          await deleteComment(uid, projectId, t.id, c.id)
+                          onSaved()
+                        })()
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
-                  <div>{c.text}</div>
+                  <div className="comment-body">
+                    <RichTextContent text={c.text} />
+                  </div>
                 </div>
               ))}
-              <div className="field-label">New comment</div>
+              <div className="field-label field-label-row">
+                <span>New comment</span>
+                <span className="field-hint">Images: ⌘V / Ctrl+V or attach</span>
+                <input
+                  ref={commentImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  aria-hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    e.target.value = ''
+                    if (!f?.type.startsWith('image/')) return
+                    const blobUrl = URL.createObjectURL(f)
+                    setCommentText(
+                      (prev) => prev + markdownImageLine(blobUrl, f.name.slice(0, 40)),
+                    )
+                    void (async () => {
+                      setImageUploadBusy('comment')
+                      try {
+                        const url = await uploadTaskImageBlob(
+                          uid,
+                          projectId,
+                          t.id,
+                          f,
+                          f.name,
+                        )
+                        setCommentText((prev) =>
+                          prev.includes(blobUrl)
+                            ? prev.replace(blobUrl, url)
+                            : prev + markdownImageLine(url, f.name.slice(0, 40)),
+                        )
+                      } finally {
+                        URL.revokeObjectURL(blobUrl)
+                        setImageUploadBusy('idle')
+                      }
+                    })()
+                  }}
+                />
+                <button
+                  type="button"
+                  className="linkish-btn-inline"
+                  disabled={imageUploadBusy !== 'idle'}
+                  onClick={() => commentImageInputRef.current?.click()}
+                >
+                  Attach image
+                </button>
+              </div>
               <textarea
                 className="textarea"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
+                onPaste={(e) => {
+                  const blob = firstImageFromClipboard(e.nativeEvent)
+                  if (!blob) return
+                  e.preventDefault()
+                  const blobUrl = URL.createObjectURL(blob)
+                  setCommentText((prev) => prev + markdownImageLine(blobUrl))
+                  void (async () => {
+                    setImageUploadBusy('comment')
+                    try {
+                      const url = await uploadTaskImageBlob(
+                        uid,
+                        projectId,
+                        t.id,
+                        blob,
+                        'paste',
+                      )
+                      setCommentText((prev) =>
+                        prev.includes(blobUrl)
+                          ? prev.replace(blobUrl, url)
+                          : prev + markdownImageLine(url),
+                      )
+                    } finally {
+                      URL.revokeObjectURL(blobUrl)
+                      setImageUploadBusy('idle')
+                    }
+                  })()
+                }}
               />
+              {textHasMarkdownImages(commentText) ? (
+                <>
+                  <div className="field-label" style={{ marginTop: 8 }}>
+                    Preview
+                  </div>
+                  <div className="rich-preview-box">
+                    <RichTextContent text={commentText} />
+                  </div>
+                </>
+              ) : null}
+              {imageUploadBusy === 'comment' ? (
+                <p className="field-hint" style={{ marginTop: 6 }}>
+                  Finishing image upload…
+                </p>
+              ) : null}
               <button
                 type="button"
                 className="btn-primary"
                 style={{ marginTop: 10, width: '100%' }}
+                disabled={
+                  imageUploadBusy !== 'idle' || commentText.includes('blob:')
+                }
                 onClick={() => {
                   const text = commentText.trim()
                   if (!text) return
+                  if (text.includes('blob:')) return
                   void addComment(
                     uid,
                     projectId,
@@ -449,16 +659,41 @@ export function TaskDetailPanel({
               />
               <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
                 {attachments.map((a) => (
-                  <a
-                    key={a.id}
-                    href={a.downloadURL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="board-card"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {a.name} · {(a.size / 1024).toFixed(1)} KB
-                  </a>
+                  <div key={a.id} className="file-attachment-row">
+                    <a
+                      href={a.downloadURL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="board-card file-attachment-link"
+                    >
+                      {a.name} · {(a.size / 1024).toFixed(1)} KB
+                    </a>
+                    <button
+                      type="button"
+                      className="linkish-btn-inline file-delete-btn"
+                      onClick={() => {
+                        void (async () => {
+                          const ok = await confirm({
+                            title: 'Delete file',
+                            message:
+                              'Remove this file from Storage, the file list, and any description or comments that embed it?',
+                            confirmLabel: 'Delete',
+                            danger: true,
+                          })
+                          if (!ok) return
+                          await deleteTaskAttachment(
+                            uid,
+                            projectId,
+                            t.id,
+                            a.id,
+                          )
+                          onSaved()
+                        })()
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
