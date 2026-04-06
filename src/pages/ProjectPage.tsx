@@ -271,6 +271,8 @@ export function ProjectPage() {
     sectionId: string,
     title: string,
   ) {
+    const parent = tasks.find((x) => x.id === parentId)
+    if (parent?.parentTaskId) return
     const siblings = tasks.filter((t) => t.parentTaskId === parentId)
     const sortOrder =
       siblings.length > 0
@@ -716,6 +718,7 @@ export function ProjectPage() {
           onSaved={() => {
             /* Panel reads `taskForDetailPanel` from the live `tasks` subscription. */
           }}
+          onOpenTask={setSelected}
         />
       ) : null}
     </>

@@ -35,6 +35,8 @@ type Props = {
   allTasks: TaskDoc[]
   onClose: () => void
   onSaved: () => void
+  /** Open another task in this panel (e.g. subtask from the Subtasks tab). */
+  onOpenTask?: (task: TaskDoc) => void
 }
 
 function dateInputValue(d: Date | null): string {
@@ -59,6 +61,7 @@ export function TaskDetailPanel({
   allTasks,
   onClose,
   onSaved,
+  onOpenTask,
 }: Props) {
   const { user } = useAuth()
   const { confirm, prompt } = useModals()
@@ -104,6 +107,12 @@ export function TaskDetailPanel({
   if (!task) return null
 
   const t = task
+  const isSubtask = Boolean(t.parentTaskId)
+
+  useEffect(() => {
+    if (!t.parentTaskId) return
+    setTab((cur) => (cur === 'subtasks' ? 'details' : cur))
+  }, [t.id, t.parentTaskId])
 
   async function savePatch(patch: Partial<TaskDoc>) {
     await updateTask(uid, projectId, t.id, patch)
@@ -151,10 +160,12 @@ export function TaskDetailPanel({
         <div style={{ display: 'flex', gap: 6, padding: '0 14px', borderBottom: '1px solid var(--border-subtle)' }}>
           {(
             [
-              ['details', 'Details'],
-              ['subtasks', `Subtasks (${subtasks.length})`],
-              ['comments', `Comments (${comments.length})`],
-              ['files', `Files (${attachments.length})`],
+              ['details', 'Details'] as const,
+              ...(!isSubtask
+                ? ([['subtasks', `Subtasks (${subtasks.length})`]] as const)
+                : []),
+              ['comments', `Comments (${comments.length})`] as const,
+              ['files', `Files (${attachments.length})`] as const,
             ] as const
           ).map(([k, lab]) => (
             <button
@@ -443,11 +454,20 @@ export function TaskDetailPanel({
             </>
           ) : null}
 
-          {tab === 'subtasks' ? (
+          {tab === 'subtasks' && !isSubtask ? (
             <div>
               {subtasks.map((st) => (
-                <div key={st.id} className="board-card" style={{ cursor: 'default' }}>
-                  {st.title}
+                <div key={st.id} className="board-card board-card--interactive">
+                  <button
+                    type="button"
+                    className="subtask-open-btn"
+                    onClick={() => {
+                      setTab('details')
+                      onOpenTask?.(st)
+                    }}
+                  >
+                    {st.title}
+                  </button>
                 </div>
               ))}
               <button
@@ -456,27 +476,27 @@ export function TaskDetailPanel({
                 style={{ marginTop: 10 }}
                 onClick={() => {
                   void (async () => {
-                  const title = await prompt({
-                    title: 'New subtask',
-                    label: 'Subtask name',
-                    placeholder: 'e.g. Draft outline',
-                    confirmLabel: 'Add',
-                  })
-                  if (!title?.trim()) return
-                  const siblings = allTasks.filter(
-                    (x) => x.parentTaskId === t.id,
-                  )
-                  const sortOrder =
-                    siblings.length > 0
-                      ? Math.max(...siblings.map((s) => s.sortOrder)) + 1
-                      : 0
-                  await createTask(uid, projectId, {
-                    sectionId: t.sectionId,
-                    title: title.trim(),
-                    parentTaskId: t.id,
-                    sortOrder,
-                  })
-                  onSaved()
+                    const title = await prompt({
+                      title: 'New subtask',
+                      label: 'Subtask name',
+                      placeholder: 'e.g. Draft outline',
+                      confirmLabel: 'Add',
+                    })
+                    if (!title?.trim()) return
+                    const siblings = allTasks.filter(
+                      (x) => x.parentTaskId === t.id,
+                    )
+                    const sortOrder =
+                      siblings.length > 0
+                        ? Math.max(...siblings.map((s) => s.sortOrder)) + 1
+                        : 0
+                    await createTask(uid, projectId, {
+                      sectionId: t.sectionId,
+                      title: title.trim(),
+                      parentTaskId: t.id,
+                      sortOrder,
+                    })
+                    onSaved()
                   })()
                 }}
               >

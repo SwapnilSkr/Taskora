@@ -277,6 +277,8 @@ export function ListView({
                     onOpenSubtask={() =>
                       setInlineSub({ parentId: t.id, sectionId: t.sectionId })
                     }
+                    sort={sort}
+                    subtaskComposerOpen={inlineSub?.parentId === t.id}
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
@@ -368,6 +370,8 @@ export function ListView({
                     onOpenSubtask={() =>
                       setInlineSub({ parentId: t.id, sectionId: t.sectionId })
                     }
+                    sort={sort}
+                    subtaskComposerOpen={inlineSub?.parentId === t.id}
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
@@ -413,7 +417,9 @@ export function ListView({
 
   return (
     <div className="table-wrap">
-      <table className="task-table">
+      <table
+        className={`task-table${multiSelectMode ? ' task-table--multi-select' : ''}`}
+      >
         <thead>
           <tr>
             {multiSelectMode ? (
@@ -439,6 +445,294 @@ export function ListView({
   )
 }
 
+function TaskRowMetaColumns({
+  t,
+  uid,
+  pop,
+  setPop,
+  subtaskQuickAdd,
+  onAssign,
+  onStartChange,
+  onDueChange,
+  onPriorityChange,
+  onDeleteTask,
+  onTaskClick,
+  onOpenSubtask,
+}: {
+  t: TaskDoc
+  uid: string
+  pop: Pop
+  setPop: (p: Pop) => void
+  subtaskQuickAdd: { count: number; onAdd: () => void } | null
+  onAssign: (taskId: string, assigneeId: string | null) => void
+  onStartChange: (taskId: string, ymd: string | null) => void
+  onDueChange: (taskId: string, ymd: string | null) => void
+  onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
+  onDeleteTask: (taskId: string) => void
+  onTaskClick: (t: TaskDoc) => void
+  onOpenSubtask: () => void
+}) {
+  const start = tsToDate(t.startDate)
+  const due = tsToDate(t.dueDate)
+  const dueState = dueBadgeState(due, t.completed)
+  const assigneeLabel =
+    t.assigneeId === uid ? 'You' : t.assigneeId ? 'Member' : 'Assign'
+  const prios: TaskDoc['priority'][] = ['low', 'medium', 'high', 'urgent']
+
+  return (
+    <>
+      {subtaskQuickAdd ? (
+        <td
+          style={{ verticalAlign: 'middle' }}
+          data-popover-root
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className={`cell-quick-btn subtask-quick-btn ${subtaskQuickAdd.count > 0 ? 'is-set' : ''}`}
+            title={
+              subtaskQuickAdd.count > 0 ? 'Add another subtask' : 'Add subtask'
+            }
+            onClick={() => subtaskQuickAdd.onAdd()}
+          >
+            <IconPlus width={14} height={14} />
+            <span>
+              {subtaskQuickAdd.count > 0
+                ? `${subtaskQuickAdd.count} subtasks`
+                : 'Add subtask'}
+            </span>
+          </button>
+        </td>
+      ) : (
+        <td
+          className="subtask-col-na"
+          style={{ verticalAlign: 'middle' }}
+          title="Nested subtasks are not supported. Add subtasks from the parent task in the list."
+        >
+          <span className="subtask-col-na__dash" aria-hidden>
+            —
+          </span>
+        </td>
+      )}
+      <td
+        style={{ verticalAlign: 'middle', position: 'relative' }}
+        data-popover-root
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className={`cell-quick-btn ${t.assigneeId ? 'is-set' : ''}`}
+          onClick={() =>
+            setPop(
+              pop?.k === 'assign' && pop.taskId === t.id
+                ? null
+                : { k: 'assign', taskId: t.id },
+            )
+          }
+        >
+          <IconUser width={14} height={14} />
+          <span>{assigneeLabel}</span>
+        </button>
+        {pop?.k === 'assign' && pop.taskId === t.id ? (
+          <div className="inline-popover" data-popover-root>
+            <button
+              type="button"
+              onClick={() => {
+                onAssign(t.id, uid)
+                setPop(null)
+              }}
+            >
+              Assign to me
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onAssign(t.id, null)
+                setPop(null)
+              }}
+            >
+              Unassigned
+            </button>
+          </div>
+        ) : null}
+      </td>
+      <td
+        style={{ verticalAlign: 'middle', position: 'relative' }}
+        data-popover-root
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className={`cell-quick-btn start-cell-btn ${start ? 'is-set' : ''}`}
+          onClick={() =>
+            setPop(
+              pop?.k === 'start' && pop.taskId === t.id
+                ? null
+                : { k: 'start', taskId: t.id },
+            )
+          }
+        >
+          <IconCalendar width={14} height={14} />
+          <span>{fmtDate(start)}</span>
+        </button>
+        {pop?.k === 'start' && pop.taskId === t.id ? (
+          <div className="inline-popover inline-popover-wide" data-popover-root>
+            <div className="mini-label">Start date</div>
+            <input
+              type="date"
+              className="input"
+              defaultValue={dateToInputValue(start)}
+              onChange={(e) => onStartChange(t.id, e.target.value || null)}
+            />
+            <button
+              type="button"
+              className="linkish-btn"
+              onClick={() => {
+                onStartChange(t.id, null)
+                setPop(null)
+              }}
+            >
+              Clear start date
+            </button>
+          </div>
+        ) : null}
+      </td>
+      <td
+        style={{ verticalAlign: 'middle', position: 'relative' }}
+        data-popover-root
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className={`cell-quick-btn due-cell-btn ${due ? 'is-set' : ''}`}
+          onClick={() =>
+            setPop(
+              pop?.k === 'due' && pop.taskId === t.id
+                ? null
+                : { k: 'due', taskId: t.id },
+            )
+          }
+        >
+          <IconCalendar width={14} height={14} />
+          <span className={dueState !== 'none' ? `due-soft due-soft-${dueState}` : ''}>
+            {fmtDate(due)}
+          </span>
+        </button>
+        {pop?.k === 'due' && pop.taskId === t.id ? (
+          <div className="inline-popover inline-popover-wide" data-popover-root>
+            <div className="mini-label">Due date</div>
+            <input
+              type="date"
+              className="input"
+              defaultValue={dateToInputValue(due)}
+              onChange={(e) => onDueChange(t.id, e.target.value || null)}
+            />
+            <button
+              type="button"
+              className="linkish-btn"
+              onClick={() => {
+                onDueChange(t.id, null)
+                setPop(null)
+              }}
+            >
+              Clear due date
+            </button>
+          </div>
+        ) : null}
+      </td>
+      <td
+        style={{ verticalAlign: 'middle', position: 'relative' }}
+        data-popover-root
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="prio-quick"
+          data-p={t.priority}
+          onClick={() =>
+            setPop(
+              pop?.k === 'prio' && pop.taskId === t.id
+                ? null
+                : { k: 'prio', taskId: t.id },
+            )
+          }
+        >
+          {t.priority}
+        </button>
+        {pop?.k === 'prio' && pop.taskId === t.id ? (
+          <div className="inline-popover" data-popover-root>
+            {prios.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  onPriorityChange(t.id, p)
+                  setPop(null)
+                }}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </td>
+      <td style={{ verticalAlign: 'middle', position: 'relative' }} data-popover-root>
+        <button
+          type="button"
+          className="icon-btn row-more-btn"
+          aria-label="Task actions"
+          onClick={(e) => {
+            e.stopPropagation()
+            setPop(
+              pop?.k === 'taskmenu' && pop.taskId === t.id
+                ? null
+                : { k: 'taskmenu', taskId: t.id },
+            )
+          }}
+        >
+          ···
+        </button>
+        {pop?.k === 'taskmenu' && pop.taskId === t.id ? (
+          <div className="inline-popover" data-popover-root>
+            <button
+              type="button"
+              onClick={() => {
+                setPop(null)
+                onTaskClick(t)
+              }}
+            >
+              Open details
+            </button>
+            {subtaskQuickAdd ? (
+              <button
+                type="button"
+                className="task-menu-with-icon"
+                onClick={() => {
+                  setPop(null)
+                  onOpenSubtask()
+                }}
+              >
+                <IconPlus width={14} height={14} />
+                Add subtask
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="danger-option"
+              onClick={() => {
+                setPop(null)
+                void onDeleteTask(t.id)
+              }}
+            >
+              Delete task…
+            </button>
+          </div>
+        ) : null}
+      </td>
+    </>
+  )
+}
+
 function TaskRow({
   task: t,
   subtasks,
@@ -456,6 +750,8 @@ function TaskRow({
   onPriorityChange,
   onDeleteTask,
   onOpenSubtask,
+  sort,
+  subtaskComposerOpen,
 }: {
   task: TaskDoc
   subtasks: TaskDoc[]
@@ -473,15 +769,10 @@ function TaskRow({
   onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
   onDeleteTask: (taskId: string) => void
   onOpenSubtask: () => void
+  sort: SortMode
+  subtaskComposerOpen: boolean
 }) {
-  const start = tsToDate(t.startDate)
-  const due = tsToDate(t.dueDate)
-  const dueState = dueBadgeState(due, t.completed)
-  const assigneeLabel =
-    t.assigneeId === uid ? 'You' : t.assigneeId ? 'Member' : 'Assign'
-
-  const prios: TaskDoc['priority'][] = ['low', 'medium', 'high', 'urgent']
-  const subFillColSpan = 5
+  const orderedSubtasks = sortTasks(subtasks, sort)
 
   return (
     <>
@@ -513,272 +804,80 @@ function TaskRow({
         <td onClick={() => onTaskClick(t)} style={{ cursor: 'pointer' }}>
           <span style={{ fontWeight: 600 }}>{t.title}</span>
         </td>
-        <td
-          style={{ verticalAlign: 'middle' }}
-          data-popover-root
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className={`cell-quick-btn subtask-quick-btn ${subtasks.length > 0 ? 'is-set' : ''}`}
-            title={subtasks.length > 0 ? 'Add another subtask' : 'Add subtask'}
-            onClick={() => onOpenSubtask()}
-          >
-            <IconPlus width={14} height={14} />
-            <span>
-              {subtasks.length > 0 ? `${subtasks.length} subtasks` : 'Add subtask'}
-            </span>
-          </button>
-        </td>
-        <td
-          style={{ verticalAlign: 'middle', position: 'relative' }}
-          data-popover-root
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className={`cell-quick-btn ${t.assigneeId ? 'is-set' : ''}`}
-            onClick={() =>
-              setPop(
-                pop?.k === 'assign' && pop.taskId === t.id
-                  ? null
-                  : { k: 'assign', taskId: t.id },
-              )
-            }
-          >
-            <IconUser width={14} height={14} />
-            <span>{assigneeLabel}</span>
-          </button>
-          {pop?.k === 'assign' && pop.taskId === t.id ? (
-            <div className="inline-popover" data-popover-root>
-              <button
-                type="button"
-                onClick={() => {
-                  onAssign(t.id, uid)
-                  setPop(null)
-                }}
-              >
-                Assign to me
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onAssign(t.id, null)
-                  setPop(null)
-                }}
-              >
-                Unassigned
-              </button>
-            </div>
-          ) : null}
-        </td>
-        <td
-          style={{ verticalAlign: 'middle', position: 'relative' }}
-          data-popover-root
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className={`cell-quick-btn start-cell-btn ${start ? 'is-set' : ''}`}
-            onClick={() =>
-              setPop(
-                pop?.k === 'start' && pop.taskId === t.id
-                  ? null
-                  : { k: 'start', taskId: t.id },
-              )
-            }
-          >
-            <IconCalendar width={14} height={14} />
-            <span>{fmtDate(start)}</span>
-          </button>
-          {pop?.k === 'start' && pop.taskId === t.id ? (
-            <div className="inline-popover inline-popover-wide" data-popover-root>
-              <div className="mini-label">Start date</div>
-              <input
-                type="date"
-                className="input"
-                defaultValue={dateToInputValue(start)}
-                onChange={(e) => onStartChange(t.id, e.target.value || null)}
-              />
-              <button
-                type="button"
-                className="linkish-btn"
-                onClick={() => {
-                  onStartChange(t.id, null)
-                  setPop(null)
-                }}
-              >
-                Clear start date
-              </button>
-            </div>
-          ) : null}
-        </td>
-        <td
-          style={{ verticalAlign: 'middle', position: 'relative' }}
-          data-popover-root
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className={`cell-quick-btn due-cell-btn ${due ? 'is-set' : ''}`}
-            onClick={() =>
-              setPop(
-                pop?.k === 'due' && pop.taskId === t.id
-                  ? null
-                  : { k: 'due', taskId: t.id },
-              )
-            }
-          >
-            <IconCalendar width={14} height={14} />
-            <span className={dueState !== 'none' ? `due-soft due-soft-${dueState}` : ''}>
-              {fmtDate(due)}
-            </span>
-          </button>
-          {pop?.k === 'due' && pop.taskId === t.id ? (
-            <div className="inline-popover inline-popover-wide" data-popover-root>
-              <div className="mini-label">Due date</div>
-              <input
-                type="date"
-                className="input"
-                defaultValue={dateToInputValue(due)}
-                onChange={(e) => onDueChange(t.id, e.target.value || null)}
-              />
-              <button
-                type="button"
-                className="linkish-btn"
-                onClick={() => {
-                  onDueChange(t.id, null)
-                  setPop(null)
-                }}
-              >
-                Clear due date
-              </button>
-            </div>
-          ) : null}
-        </td>
-        <td
-          style={{ verticalAlign: 'middle', position: 'relative' }}
-          data-popover-root
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="prio-quick"
-            data-p={t.priority}
-            onClick={() =>
-              setPop(
-                pop?.k === 'prio' && pop.taskId === t.id
-                  ? null
-                  : { k: 'prio', taskId: t.id },
-              )
-            }
-          >
-            {t.priority}
-          </button>
-          {pop?.k === 'prio' && pop.taskId === t.id ? (
-            <div className="inline-popover" data-popover-root>
-              {prios.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => {
-                    onPriorityChange(t.id, p)
-                    setPop(null)
-                  }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </td>
-        <td style={{ verticalAlign: 'middle', position: 'relative' }} data-popover-root>
-          <button
-            type="button"
-            className="icon-btn row-more-btn"
-            aria-label="Task actions"
-            onClick={(e) => {
-              e.stopPropagation()
-              setPop(
-                pop?.k === 'taskmenu' && pop.taskId === t.id
-                  ? null
-                  : { k: 'taskmenu', taskId: t.id },
-              )
-            }}
-          >
-            ···
-          </button>
-          {pop?.k === 'taskmenu' && pop.taskId === t.id ? (
-            <div className="inline-popover" data-popover-root>
-              <button
-                type="button"
-                onClick={() => {
-                  setPop(null)
-                  onTaskClick(t)
-                }}
-              >
-                Open details
-              </button>
-              <button
-                type="button"
-                className="task-menu-with-icon"
-                onClick={() => {
-                  setPop(null)
-                  onOpenSubtask()
-                }}
-              >
-                <IconPlus width={14} height={14} />
-                Add subtask
-              </button>
-              <button
-                type="button"
-                className="danger-option"
-                onClick={() => {
-                  setPop(null)
-                  void onDeleteTask(t.id)
-                }}
-              >
-                Delete task…
-              </button>
-            </div>
-          ) : null}
-        </td>
+        <TaskRowMetaColumns
+          t={t}
+          uid={uid}
+          pop={pop}
+          setPop={setPop}
+          subtaskQuickAdd={{
+            count: subtasks.length,
+            onAdd: onOpenSubtask,
+          }}
+          onAssign={onAssign}
+          onStartChange={onStartChange}
+          onDueChange={onDueChange}
+          onPriorityChange={onPriorityChange}
+          onDeleteTask={onDeleteTask}
+          onTaskClick={onTaskClick}
+          onOpenSubtask={onOpenSubtask}
+        />
       </tr>
-      {subtasks.map((st) => (
-        <tr key={st.id} className="task-row task-row-sub">
-          {multiSelectMode ? (
+      {orderedSubtasks.map((st, si) => {
+        const isLastSubInTree =
+          si === orderedSubtasks.length - 1 && !subtaskComposerOpen
+        return (
+          <tr key={st.id} className="task-row task-row-sub">
+            {multiSelectMode ? (
+              <td style={{ verticalAlign: 'middle' }}>
+                <input
+                  type="checkbox"
+                  className="select-checkbox"
+                  checked={selectedIds.has(st.id)}
+                  onChange={() => onToggleSelect(st.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </td>
+            ) : null}
             <td style={{ verticalAlign: 'middle' }}>
-              <input
-                type="checkbox"
-                className="select-checkbox"
-                checked={selectedIds.has(st.id)}
-                onChange={() => onToggleSelect(st.id)}
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                className="checkbox todo-complete-btn"
+                data-done={st.completed ? 'true' : 'false'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleComplete(st)
+                }}
               />
             </td>
-          ) : null}
-          <td style={{ verticalAlign: 'middle' }}>
-            <button
-              type="button"
-              className="checkbox todo-complete-btn"
-              data-done={st.completed ? 'true' : 'false'}
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggleComplete(st)
-              }}
+            <td
+              className="subtask-task-cell"
+              onClick={() => onTaskClick(st)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div
+                className={`task-tree-line ${isLastSubInTree ? 'task-tree-line--end' : 'task-tree-line--cont'}`}
+              >
+                <span className="task-tree-line__guide" aria-hidden />
+                <span className="task-tree-line__text">{st.title}</span>
+              </div>
+            </td>
+            <TaskRowMetaColumns
+              t={st}
+              uid={uid}
+              pop={pop}
+              setPop={setPop}
+              subtaskQuickAdd={null}
+              onAssign={onAssign}
+              onStartChange={onStartChange}
+              onDueChange={onDueChange}
+              onPriorityChange={onPriorityChange}
+              onDeleteTask={onDeleteTask}
+              onTaskClick={onTaskClick}
+              onOpenSubtask={onOpenSubtask}
             />
-          </td>
-          <td
-            className="subtask-indent"
-            onClick={() => onTaskClick(st)}
-            style={{ cursor: 'pointer' }}
-          >
-            <span>{st.title}</span>
-          </td>
-          <td colSpan={subFillColSpan} style={{ background: 'transparent' }} />
-          <td />
-        </tr>
-      ))}
+          </tr>
+        )
+      })}
     </>
   )
 }

@@ -353,6 +353,21 @@ export async function createTask(
     sortOrder: number
   },
 ): Promise<string> {
+  if (input.parentTaskId) {
+    const parentSnap = await getDoc(
+      taskRef(uid, projectId, input.parentTaskId),
+    )
+    if (!parentSnap.exists()) {
+      throw new Error('Parent task not found')
+    }
+    const parent = mapTask(
+      parentSnap.id,
+      parentSnap.data() as Record<string, unknown>,
+    )
+    if (parent.parentTaskId) {
+      throw new Error('Subtasks cannot have subtasks')
+    }
+  }
   const ref = await addDoc(tasksCol(uid, projectId), {
     sectionId: input.sectionId,
     title: input.title,

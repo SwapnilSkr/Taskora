@@ -85,6 +85,11 @@ export function MyTasksPage() {
             const next = list?.find((x) => x.id === selected.task.id)
             if (next) setSelected({ projectId: selected.projectId, task: next })
           }}
+          onOpenTask={(st) =>
+            setSelected((prev) =>
+              prev ? { projectId: prev.projectId, task: st } : null,
+            )
+          }
         />
       ) : null}
     </div>
