@@ -508,7 +508,55 @@ export async function updateTask(
     Omit<TaskDoc, 'id' | 'createdAt'> & { completed?: boolean }
   >,
 ): Promise<void> {
-  const cleaned: Record<string, unknown> = { ...patch, updatedAt: ts() }
+  const snap = await getDoc(taskRef(uid, projectId, taskId))
+  if (!snap.exists()) {
+    throw new Error('Task not found')
+  }
+  const current = mapTask(
+    taskId,
+    snap.data() as Record<string, unknown>,
+  )
+
+  const merged: Partial<TaskDoc> & {
+    completed?: boolean
+    sortOrder?: number
+    sectionId?: string
+    parentTaskId?: string | null
+  } = { ...patch }
+
+  if (patch.parentTaskId !== undefined && patch.parentTaskId !== null) {
+    if (patch.parentTaskId === taskId) {
+      throw new Error('A task cannot be its own parent.')
+    }
+    const kids = await getDocs(
+      query(tasksCol(uid, projectId), where('parentTaskId', '==', taskId)),
+    )
+    if (!kids.empty) {
+      throw new Error(
+        'This task has subtasks. Move or delete them before making it a subtask.',
+      )
+    }
+    const pSnap = await getDoc(taskRef(uid, projectId, patch.parentTaskId))
+    if (!pSnap.exists()) {
+      throw new Error('Parent task not found')
+    }
+    const parent = mapTask(
+      patch.parentTaskId,
+      pSnap.data() as Record<string, unknown>,
+    )
+    if (parent.parentTaskId) {
+      throw new Error('Subtasks cannot have subtasks.')
+    }
+    merged.sectionId = parent.sectionId
+  }
+
+  if (patch.parentTaskId === null && current.parentTaskId !== null) {
+    if (patch.sectionId === undefined) {
+      throw new Error('sectionId is required when promoting a subtask to the main list.')
+    }
+  }
+
+  const cleaned: Record<string, unknown> = { ...merged, updatedAt: ts() }
   if (patch.completed === true) cleaned.completedAt = ts()
   if (patch.completed === false) cleaned.completedAt = null
   await updateDoc(taskRef(uid, projectId, taskId), cleaned)

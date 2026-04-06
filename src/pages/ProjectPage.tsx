@@ -701,6 +701,7 @@ export function ProjectPage() {
           sections={sections}
           statuses={statuses}
           tasks={filteredTasks}
+          tasksForMove={tasks}
           group={group}
           sort={sort}
           uid={uid}
@@ -729,16 +730,29 @@ export function ProjectPage() {
             void handleRequestRenameSection(sid, name)
           }
           onDeleteSection={(sid) => void handleDeleteSection(sid)}
+          onMoveTask={(taskId, patch) => {
+            void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
+              const msg =
+                err instanceof Error ? err.message : 'Could not move this task.'
+              void alert({ title: 'Move blocked', message: msg })
+            })
+          }}
         />
       ) : null}
       {activeView === 'board' ? (
         <BoardView
-          uid={uid}
-          projectId={pid}
           sections={sections}
           statuses={statuses}
           tasks={filteredTasks}
+          tasksForMove={tasks}
           onTaskClick={setSelected}
+          onMoveTask={(taskId, patch) => {
+            void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
+              const msg =
+                err instanceof Error ? err.message : 'Could not move this task.'
+              void alert({ title: 'Move blocked', message: msg })
+            })
+          }}
         />
       ) : null}
       {activeView === 'timeline' ? (
@@ -758,15 +772,17 @@ export function ProjectPage() {
         <WorkloadView tasks={filteredTasks} uid={uid} />
       ) : null}
 
-      <Button
-        type="button"
-        variant="ghost"
-        className="text-muted-foreground mx-7 mb-8 mt-[18px] justify-start gap-1.5 text-[13px] font-semibold hover:text-foreground"
-        onClick={() => void onAddSection()}
-      >
-        <IconPlus width={16} height={16} />
-        Add section
-      </Button>
+      {activeView === 'list' || activeView === 'board' ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-muted-foreground mx-7 mb-8 mt-[18px] justify-start gap-1.5 text-[13px] font-semibold hover:text-foreground"
+          onClick={() => void onAddSection()}
+        >
+          <IconPlus width={16} height={16} />
+          Add section
+        </Button>
+      ) : null}
 
       {selected && taskForDetailPanel ? (
         <TaskDetailPanel
