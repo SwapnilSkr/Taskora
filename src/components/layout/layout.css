@@ -1088,3 +1088,204 @@
   font-size: 11px;
   font-weight: 500;
 }
+
+/* List view — quick edit & section actions */
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.section-title-text {
+  font-weight: 700;
+  font-size: 13px;
+}
+.section-add-inline {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.section-actions {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.section-menu-btn {
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.inline-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 40;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.inline-popover-wide {
+  min-width: 220px;
+}
+.inline-popover button {
+  text-align: left;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.inline-popover button:hover {
+  background: var(--bg-hover);
+}
+.danger-option {
+  color: #f0a8b3;
+}
+.cell-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.cell-quick-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.cell-quick-btn.is-set {
+  color: var(--text);
+  border-color: var(--border-subtle);
+}
+.todo-complete-btn {
+  display: block;
+  margin: 0 auto;
+  cursor: pointer;
+  background: var(--bg-app);
+}
+.mini-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 2px 6px;
+}
+.linkish-btn {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-share);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.linkish-btn:hover {
+  text-decoration: underline;
+}
+.due-soft {
+  text-transform: none;
+  font-weight: 500;
+}
+.due-soft-overdue {
+  color: #f0a8b3;
+}
+.due-soft-soon {
+  color: #c9d4a3;
+}
+.due-soft-ok {
+  color: var(--text-muted);
+}
+.prio-quick {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-app);
+  color: var(--text);
+  cursor: pointer;
+}
+.prio-quick[data-p='low'] {
+  background: #2a3238;
+  color: #9db0bf;
+  border-color: transparent;
+}
+.prio-quick[data-p='medium'] {
+  background: #2e322a;
+  color: #c9d4a3;
+  border-color: transparent;
+}
+.prio-quick[data-p='high'] {
+  background: #3a2e28;
+  color: #f0b69b;
+  border-color: transparent;
+}
+.prio-quick[data-p='urgent'] {
+  background: #3b2228;
+  color: #ff9ab0;
+  border-color: transparent;
+}
+.row-more-btn {
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.task-menu-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subtask-count-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  border-radius: var(--radius-pill);
+  vertical-align: middle;
+}
+.subtask-composer-row td {
+  padding: 8px 12px !important;
+  background: rgba(90, 159, 212, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.subtask-composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+}
+.subtask-composer-branch {
+  width: 10px;
+  height: 22px;
+  border-left: 2px solid var(--border-subtle);
+  border-bottom: 2px solid var(--border-subtle);
+  border-radius: 0 0 0 6px;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.subtask-composer-input {
+  flex: 1;
+  min-width: 0;
+}
+

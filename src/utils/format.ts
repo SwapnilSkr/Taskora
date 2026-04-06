@@ -34,3 +34,12 @@ export function initials(name: string | null | undefined): string {
   const p = name.trim().split(/\s+/).slice(0, 2)
   return p.map((x) => x[0]?.toUpperCase() ?? '').join('') || '?'
 }
+
+/** HTML date input value (YYYY-MM-DD). */
+export function dateToInputValue(d: Date | null): string {
+  if (!d) return ''
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}

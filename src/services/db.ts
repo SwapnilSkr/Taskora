@@ -290,6 +290,43 @@ export async function renameSection(
   await updateDoc(doc(sectionsCol(uid, projectId), sectionId), { name })
 }
 
+const BATCH_FIRESTORE = 450
+
+/** Moves tasks to another section, then deletes the section doc (requires ≥2 sections). */
+export async function deleteSection(
+  uid: string,
+  projectId: string,
+  sectionId: string,
+  allSections: SectionDoc[],
+  allTasks: TaskDoc[],
+): Promise<void> {
+  const remaining = allSections
+    .filter((s) => s.id !== sectionId)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+  if (remaining.length === 0) {
+    throw new Error('Cannot delete the only section in a project')
+  }
+  const targetId = remaining[0].id
+  let batch = writeBatch(getDb())
+  let n = 0
+  for (const t of allTasks) {
+    if (t.sectionId !== sectionId) continue
+    batch.update(taskRef(uid, projectId, t.id), {
+      sectionId: targetId,
+      updatedAt: ts(),
+    })
+    n++
+    if (n >= BATCH_FIRESTORE) {
+      await batch.commit()
+      batch = writeBatch(getDb())
+      n = 0
+    }
+  }
+  if (n > 0) await batch.commit()
+  await deleteDoc(doc(sectionsCol(uid, projectId), sectionId))
+  await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
+}
+
 export function subscribeTasks(
   uid: string,
   projectId: string,

@@ -1,3 +1,4 @@
+import { Timestamp } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -17,6 +18,9 @@ import {
   bulkSetAssignee,
   bulkSetTasksCompleted,
   createTask,
+  deleteSection,
+  deleteTask,
+  renameSection,
   subscribeProjects,
   subscribeSections,
   subscribeTasks,
@@ -77,6 +81,7 @@ export function ProjectPage() {
   const [filterStatus, setFilterStatus] = useState<StatusFilter>('all')
   const [filterAssignee, setFilterAssignee] = useState<AssigneeFilter>('all')
   const [filterHideCompleted, setFilterHideCompleted] = useState(false)
+  const [multiSelectMode, setMultiSelectMode] = useState(false)
   const popRef = useRef<HTMLDivElement | null>(null)
 
   const activeView: ProjectView =
@@ -197,8 +202,97 @@ export function ProjectPage() {
     await addSection(uid, pid, name.trim(), sections.length)
   }
 
+  async function handleRequestRenameSection(
+    sectionId: string,
+    currentName: string,
+  ) {
+    const name = await prompt({
+      title: 'Rename section',
+      label: 'Section name',
+      defaultValue: currentName,
+      confirmLabel: 'Save',
+    })
+    if (!name?.trim()) return
+    await renameSection(uid, pid, sectionId, name.trim())
+  }
+
+  async function handleDeleteSection(sectionId: string) {
+    const ok = await confirm({
+      title: 'Delete section',
+      message:
+        'All tasks in this section move to the next section in the list. If this is the only section, deletion is blocked.',
+      confirmLabel: 'Delete section',
+      danger: true,
+    })
+    if (!ok) return
+    try {
+      await deleteSection(uid, pid, sectionId, sections, tasks)
+    } catch (err) {
+      await alert({
+        title: 'Cannot delete section',
+        message:
+          err instanceof Error ? err.message : 'Something went wrong.',
+      })
+    }
+  }
+
+  function handleAssignQuick(taskId: string, assigneeId: string | null) {
+    void updateTask(uid, pid, taskId, { assigneeId })
+  }
+
+  function handleDueQuick(taskId: string, ymd: string | null) {
+    void updateTask(uid, pid, taskId, {
+      dueDate: ymd
+        ? Timestamp.fromDate(new Date(ymd + 'T12:00:00'))
+        : null,
+    })
+  }
+
+  function handlePriorityQuick(taskId: string, priority: TaskDoc['priority']) {
+    void updateTask(uid, pid, taskId, { priority })
+  }
+
+  async function handleAddSubtaskQuick(
+    parentId: string,
+    sectionId: string,
+    title: string,
+  ) {
+    const siblings = tasks.filter((t) => t.parentTaskId === parentId)
+    const sortOrder =
+      siblings.length > 0
+        ? Math.max(...siblings.map((s) => s.sortOrder)) + 1
+        : 0
+    await createTask(uid, pid, {
+      sectionId,
+      title: title.trim(),
+      parentTaskId: parentId,
+      sortOrder,
+    })
+  }
+
+  async function handleDeleteTaskRow(taskId: string) {
+    const ok = await confirm({
+      title: 'Delete task',
+      message:
+        'Delete this task, its subtasks, and related activity? This cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    })
+    if (!ok) return
+    await deleteTask(uid, pid, taskId)
+    setSelected((s) => (s?.id === taskId ? null : s))
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.delete(taskId)
+      return next
+    })
+  }
+
   function goView(v: ProjectView) {
-    if (v !== activeView) setSelectedIds(new Set())
+    if (v !== activeView) {
+      setSelectedIds(new Set())
+      if (v !== 'list') setMultiSelectMode(false)
+    }
     nav(`/project/${pid}/${v}`)
   }
 
@@ -302,6 +396,21 @@ export function ProjectPage() {
           </button>
           <div className="toolbar-spacer" />
           <div className="toolbar-cluster">
+            {activeView === 'list' ? (
+              <button
+                type="button"
+                className="chip-btn"
+                data-open={multiSelectMode ? 'true' : 'false'}
+                onClick={() => {
+                  setMultiSelectMode((v) => {
+                    if (v) setSelectedIds(new Set())
+                    return !v
+                  })
+                }}
+              >
+                Select tasks
+              </button>
+            ) : null}
             <button
               type="button"
               className="chip-btn"
@@ -460,7 +569,7 @@ export function ProjectPage() {
                   void alert({
                     title: 'Project shortcuts',
                     message:
-                      '⌘K (Ctrl+K): Search and jump. In List: use row checkboxes to select tasks, then use the bulk bar for complete, assign, or delete.',
+                      '⌘K (Ctrl+K): Search and jump. In List: turn on “Select tasks” for bulk actions. Otherwise use the Done column and inline assignee, due date, and priority — no need to open details.',
                   })
                 }}
               >
@@ -483,7 +592,7 @@ export function ProjectPage() {
         </div>
       ) : null}
 
-      {activeView === 'list' && selectedIds.size > 0 ? (
+      {activeView === 'list' && multiSelectMode && selectedIds.size > 0 ? (
         <div className="bulk-action-bar">
           <span className="bulk-count">{selectedIds.size} selected</span>
           <button type="button" onClick={() => void runBulkComplete(true)}>
@@ -522,6 +631,7 @@ export function ProjectPage() {
           group={group}
           sort={sort}
           uid={uid}
+          multiSelectMode={multiSelectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onSetManySelected={setManySelected}
@@ -533,6 +643,17 @@ export function ProjectPage() {
             })
           }
           onAddTask={(sid) => void onAddTask(sid)}
+          onAssign={handleAssignQuick}
+          onDueChange={handleDueQuick}
+          onPriorityChange={handlePriorityQuick}
+          onAddSubtask={(parentId, sectionId, title) =>
+            void handleAddSubtaskQuick(parentId, sectionId, title)
+          }
+          onDeleteTask={(id) => void handleDeleteTaskRow(id)}
+          onRequestRenameSection={(sid, name) =>
+            void handleRequestRenameSection(sid, name)
+          }
+          onDeleteSection={(sid) => void handleDeleteSection(sid)}
         />
       ) : null}
       {activeView === 'board' ? (
