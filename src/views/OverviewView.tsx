@@ -1,4 +1,3 @@
-import '../components/layout/layout.css'
 import type { ProjectDoc, SectionDoc, TaskDoc } from '../types/models'
 import { tsToDate } from '../utils/format'
 
@@ -21,32 +20,41 @@ export function OverviewView({
   }).length
 
   return (
-    <div className="stats-grid">
-      <div className="stat-card">
-        <h3>Project health</h3>
-        <div className="n">{Math.round((done / Math.max(roots.length, 1)) * 100)}%</div>
-        <div style={{ color: 'var(--text-muted)', marginTop: 6, fontSize: 13 }}>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3.5 px-7 pb-10">
+      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+          Project health
+        </h3>
+        <div className="text-[28px] font-bold tracking-tight">
+          {Math.round((done / Math.max(roots.length, 1)) * 100)}%
+        </div>
+        <div className="mt-1.5 text-[13px] text-muted">
           {done} of {roots.length} top-level tasks complete
         </div>
       </div>
-      <div className="stat-card">
-        <h3>Sections</h3>
-        <div className="n">{sections.length}</div>
-        <div style={{ color: 'var(--text-muted)', marginTop: 6, fontSize: 13 }}>
+      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+          Sections
+        </h3>
+        <div className="text-[28px] font-bold tracking-tight">{sections.length}</div>
+        <div className="mt-1.5 text-[13px] text-muted">
           Structured like Asana list sections
         </div>
       </div>
-      <div className="stat-card">
-        <h3>At risk</h3>
-        <div className="n">{overdue}</div>
-        <div style={{ color: 'var(--text-muted)', marginTop: 6, fontSize: 13 }}>
-          Overdue incomplete tasks
-        </div>
+      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+          At risk
+        </h3>
+        <div className="text-[28px] font-bold tracking-tight">{overdue}</div>
+        <div className="mt-1.5 text-[13px] text-muted">Overdue incomplete tasks</div>
       </div>
-      <div className="stat-card">
-        <h3>Description</h3>
-        <div style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {project.description || 'Add a short project charter in the star menu (coming soon) or keep notes in the first task.'}
+      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+          Description
+        </h3>
+        <div className="text-sm leading-normal text-muted">
+          {project.description ||
+            'Add a short project charter in the star menu (coming soon) or keep notes in the first task.'}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import {
   forwardRef,
   useCallback,
@@ -111,7 +112,10 @@ export const DescriptionWysiwyg = forwardRef<DescriptionWysiwygRef, Props>(
     return (
       <div
         ref={elRef}
-        className={`description-wysiwyg ${className}`.trim()}
+        className={clsx(
+          'min-h-[120px] max-h-[420px] w-full resize-y overflow-y-auto rounded-card border border-border bg-app px-3 py-2 text-[13px] leading-[1.45] text-fg outline-none empty:before:pointer-events-none empty:before:text-muted empty:before:content-[attr(data-placeholder)] focus:border-share focus:shadow-[0_0_0_1px_rgba(90,159,212,0.25)] [&_.desc-wysiwyg-img]:my-2 [&_.desc-wysiwyg-img]:block [&_.desc-wysiwyg-img]:max-h-[220px] [&_.desc-wysiwyg-img]:max-w-full [&_.desc-wysiwyg-img]:rounded-lg [&_.desc-wysiwyg-img]:border [&_.desc-wysiwyg-img]:border-border-subtle [&_.desc-wysiwyg-img]:object-contain',
+          className,
+        )}
         contentEditable={!disabled}
         suppressContentEditableWarning
         role="textbox"

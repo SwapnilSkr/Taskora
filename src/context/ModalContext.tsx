@@ -8,7 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react'
-import '../components/layout/layout.css'
+import clsx from 'clsx'
 
 export type ConfirmOptions = {
   title: string
@@ -96,10 +96,13 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={value}>
       {children}
       {active ? (
-        <div className="app-modal-root" role="presentation">
+        <div
+          className="pointer-events-none fixed inset-0 z-[500] grid place-items-center p-6"
+          role="presentation"
+        >
           <button
             type="button"
-            className="app-modal-backdrop"
+            className="pointer-events-auto fixed inset-0 z-0 cursor-default border-none bg-black/55 p-0"
             aria-label="Close"
             onClick={() => {
               if (active.kind === 'confirm') active.resolve(false)
@@ -108,17 +111,27 @@ export function ModalProvider({ children }: { children: ReactNode }) {
               close()
             }}
           />
-          <div className="app-modal-panel" role="dialog" aria-modal="true" aria-labelledby="app-modal-title">
-            <h2 id="app-modal-title" className="app-modal-title">
+          <div
+            className="pointer-events-auto relative z-[1] max-h-[min(80vh,560px)] w-full max-w-[420px] overflow-auto rounded-xl border border-border bg-raised p-[22px] pb-[18px] shadow-popover"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="app-modal-title"
+          >
+            <h2
+              id="app-modal-title"
+              className="m-0 mb-3 text-lg font-bold leading-tight tracking-tight"
+            >
               {active.title}
             </h2>
             {active.kind === 'confirm' ? (
               <>
-                <p className="app-modal-body">{active.message}</p>
-                <div className="app-modal-actions">
+                <p className="m-0 mb-[18px] text-sm leading-normal text-muted">
+                  {active.message}
+                </p>
+                <div className="flex flex-wrap justify-end gap-2.5">
                   <button
                     type="button"
-                    className="btn-ghost"
+                    className="rounded-pill border border-border bg-transparent px-[18px] py-2 text-[13px] font-semibold transition-colors hover:bg-hover-surface"
                     onClick={() => {
                       active.resolve(false)
                       close()
@@ -128,7 +141,12 @@ export function ModalProvider({ children }: { children: ReactNode }) {
                   </button>
                   <button
                     type="button"
-                    className={`btn-primary ${active.danger ? 'btn-danger' : ''}`}
+                    className={clsx(
+                      'rounded-pill px-[18px] py-2 text-[13px] font-bold text-white transition-colors',
+                      active.danger
+                        ? 'bg-danger hover:bg-danger-hover'
+                        : 'bg-share hover:bg-share-hover',
+                    )}
                     onClick={() => {
                       active.resolve(true)
                       close()
@@ -141,11 +159,13 @@ export function ModalProvider({ children }: { children: ReactNode }) {
             ) : null}
             {active.kind === 'alert' ? (
               <>
-                <p className="app-modal-body">{active.message}</p>
-                <div className="app-modal-actions">
+                <p className="m-0 mb-[18px] text-sm leading-normal text-muted">
+                  {active.message}
+                </p>
+                <div className="flex flex-wrap justify-end gap-2.5">
                   <button
                     type="button"
-                    className="btn-primary"
+                    className="rounded-pill bg-share px-[18px] py-2 text-[13px] font-bold text-white hover:bg-share-hover"
                     onClick={() => {
                       active.resolve()
                       close()
@@ -159,24 +179,26 @@ export function ModalProvider({ children }: { children: ReactNode }) {
             {active.kind === 'prompt' ? (
               <form onSubmit={handlePromptSubmit}>
                 {active.message ? (
-                  <p className="app-modal-body app-modal-body-tight">{active.message}</p>
+                  <p className="mb-2.5 text-sm leading-normal text-muted">
+                    {active.message}
+                  </p>
                 ) : null}
                 {active.label ? (
-                  <label className="field-label" style={{ marginTop: 4 }}>
+                  <label className="mb-1.5 mt-1 block text-[11px] font-bold uppercase tracking-wider text-muted">
                     {active.label}
                   </label>
                 ) : null}
                 <input
-                  className="input app-modal-input"
+                  className="mb-[18px] w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                   autoFocus
                   placeholder={active.placeholder}
                   value={promptValue}
                   onChange={(e) => setPromptValue(e.target.value)}
                 />
-                <div className="app-modal-actions">
+                <div className="flex flex-wrap justify-end gap-2.5">
                   <button
                     type="button"
-                    className="btn-ghost"
+                    className="rounded-pill border border-border bg-transparent px-[18px] py-2 text-[13px] font-semibold transition-colors hover:bg-hover-surface"
                     onClick={() => {
                       active.resolve(null)
                       close()
@@ -184,7 +206,10 @@ export function ModalProvider({ children }: { children: ReactNode }) {
                   >
                     {active.cancelLabel ?? 'Cancel'}
                   </button>
-                  <button type="submit" className="btn-primary">
+                  <button
+                    type="submit"
+                    className="rounded-pill bg-share px-[18px] py-2 text-[13px] font-bold text-white hover:bg-share-hover"
+                  >
                     {active.confirmLabel ?? 'Save'}
                   </button>
                 </div>

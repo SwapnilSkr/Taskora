@@ -20,52 +20,50 @@ export function DashboardView({
   const totalEst = roots.reduce((n, t) => n + (t.estimatedMinutes ?? 0), 0)
 
   return (
-    <div className="stats-grid">
-      <div className="stat-card">
-        <h3>Status mix</h3>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3.5 px-7 pb-10">
+      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+          Status mix
+        </h3>
         {statuses.map((s) => {
           const v = statusCounts[s.id] || 0
           return (
-            <div key={s.id} className="bar-row">
+            <div key={s.id} className="mt-2 flex items-center gap-2 text-xs text-muted">
               <span
-                style={{
-                  width: 110,
-                  textTransform: 'capitalize',
-                  fontSize: 13,
-                  color: 'var(--text-muted)',
-                }}
+                className="w-[110px] text-[13px] capitalize text-muted"
               >
                 {s.name}
               </span>
-              <div className="bar">
+              <div className="h-2 flex-1 overflow-hidden rounded-pill bg-bar-track">
                 <i
+                  className="block h-full rounded-[inherit]"
                   style={{
                     width: `${(v / Math.max(roots.length, 1)) * 100}%`,
                     backgroundColor: s.color,
                   }}
                 />
               </div>
-              <span style={{ width: 28, textAlign: 'right', fontSize: 13 }}>
-                {v}
-              </span>
+              <span className="w-7 text-right text-[13px] text-fg">{v}</span>
             </div>
           )
         })}
       </div>
-      <div className="stat-card">
-        <h3>Time tracking</h3>
-        <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+          Time tracking
+        </h3>
+        <div className="text-sm text-muted">
           Estimated {totalEst} min · Logged {totalTracked} min
         </div>
-        <div className="bar" style={{ marginTop: 12 }}>
+        <div className="mt-3 h-2 flex-1 overflow-hidden rounded-pill bg-bar-track">
           <i
+            className="block h-full rounded-[inherit] bg-upgrade"
             style={{
               width: `${totalEst ? Math.min(100, (totalTracked / totalEst) * 100) : 0}%`,
-              background: '#c8a96d',
             }}
           />
         </div>
-        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+        <div className="mt-2 text-xs text-muted">
           Modeled after Asana Advanced time tracking fields (estimate + actuals on each task).
         </div>
       </div>

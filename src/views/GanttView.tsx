@@ -5,7 +5,6 @@ import {
   max as maxDate,
   min as minDate,
 } from 'date-fns'
-import '../components/layout/layout.css'
 import type { TaskDoc } from '../types/models'
 import { tsToDate } from '../utils/format'
 
@@ -56,7 +55,7 @@ export function GanttView({
   const rows = buildRows(tasks)
   if (rows.length === 0) {
     return (
-      <div style={{ padding: '24px 28px', color: 'var(--text-muted)' }}>
+      <div className="px-7 py-6 text-muted">
         No tasks in this project yet. Add tasks from the List tab.
       </div>
     )
@@ -75,44 +74,26 @@ export function GanttView({
   const pctPerDay = 100 / totalDays
 
   return (
-    <div className="timeline" style={{ paddingBottom: 40 }}>
-      <div style={{ padding: '0 28px 12px', color: 'var(--text-muted)', fontSize: 13 }}>
+    <div className="pb-10">
+      <div className="px-7 pb-3 text-[13px] text-muted">
         Drag-friendly schedule: every task gets a bar from start/due dates, or from created date if unset.
         Click a bar or title to edit. Orange line is today.
       </div>
-      <div className="gantt-scroll">
-        <div className="gantt-grid">
+      <div className="mx-7 overflow-x-auto rounded-[10px] border border-border-subtle bg-gantt-grid-bg">
+        <div className="min-w-[720px]">
           <div
+            className="grid border-b border-border-subtle bg-[#1a1b1e]"
             style={{
-              display: 'grid',
               gridTemplateColumns: `minmax(180px,220px) repeat(${days.length}, minmax(22px, 1fr))`,
-              borderBottom: '1px solid var(--border-subtle)',
-              background: '#1a1b1e',
             }}
           >
-            <div
-              style={{
-                padding: '10px 12px',
-                fontSize: 10,
-                fontWeight: 700,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
+            <div className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted">
               Task
             </div>
             {days.map((d, i) => (
               <div
                 key={i}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  textAlign: 'center',
-                  padding: '10px 2px',
-                  borderLeft: '1px solid var(--border-subtle)',
-                }}
+                className="border-l border-border-subtle px-0.5 py-2.5 text-center text-[10px] font-bold text-muted"
               >
                 {i % 3 === 0 || i === 0 || i === days.length - 1
                   ? format(d, 'd')
@@ -129,43 +110,35 @@ export function GanttView({
             return (
               <div
                 key={t.id}
+                className="grid min-h-9 items-stretch border-b border-border-subtle"
                 style={{
-                  display: 'grid',
                   gridTemplateColumns: `minmax(180px,220px) repeat(${days.length}, minmax(22px, 1fr))`,
-                  borderBottom: '1px solid var(--border-subtle)',
-                  alignItems: 'stretch',
-                  minHeight: 36,
                 }}
               >
-                <div
-                  style={{
-                    padding: '8px 12px',
-                    borderRight: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: 2,
-                  }}
-                >
-                  <div className="gantt-row-label">
-                    <button type="button" onClick={() => onTaskClick(t)}>
+                <div className="flex flex-col justify-center gap-0.5 border-r border-border-subtle px-3 py-2">
+                  <div className="overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold">
+                    <button
+                      type="button"
+                      className="block w-full cursor-pointer border-none bg-transparent p-0 text-left font-inherit text-inherit hover:text-share"
+                      onClick={() => onTaskClick(t)}
+                    >
                       {t.title}
                     </button>
                   </div>
                   {inferred ? (
-                    <span className="gantt-row-muted">Estimated window · set dates in details</span>
+                    <span className="text-[11px] font-medium text-muted">
+                      Estimated window · set dates in details
+                    </span>
                   ) : null}
                 </div>
                 <div
+                  className="relative min-h-9 border-l border-border-subtle"
                   style={{
                     gridColumn: `2 / -1`,
-                    position: 'relative',
-                    minHeight: 36,
-                    borderLeft: '1px solid var(--border-subtle)',
                   }}
                 >
                   <div
-                    className="gantt-today"
+                    className="pointer-events-none absolute bottom-0 top-0 z-[2] w-0.5 bg-[rgba(224,109,94,0.85)]"
                     style={{
                       left: `calc(${todayOffset * pctPerDay}% + ${pctPerDay / 2}%)`,
                     }}
@@ -173,7 +146,7 @@ export function GanttView({
                   <div
                     role="button"
                     tabIndex={0}
-                    className="gantt-bar"
+                    className="absolute top-[5px] h-[22px] min-w-2 cursor-pointer rounded-md bg-gradient-to-r from-share to-project opacity-90 transition-[opacity,filter] hover:opacity-100 hover:brightness-110"
                     style={{
                       left: `${offset * pctPerDay}%`,
                       width: `${len * pctPerDay}%`,

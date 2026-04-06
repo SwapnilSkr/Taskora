@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type React from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
@@ -6,7 +7,6 @@ import {
   IconPlus,
   IconUser,
 } from "../components/icons";
-import "../components/layout/layout.css";
 import type { SectionDoc, StatusDoc, TaskDoc } from "../types/models";
 import {
   dateToInputValue,
@@ -91,9 +91,15 @@ function StatusTag({
   statuses: StatusDoc[];
 }) {
   const s = statuses.find((x) => x.id === sid);
-  if (!s) return <span className="status-badge-none" />;
+  if (!s)
+    return (
+      <span className="inline-block h-0.5 w-3 rounded-sm bg-border-subtle" />
+    );
   return (
-    <span className="status-badge" style={{ backgroundColor: s.color }}>
+    <span
+      className="inline-block rounded-pill border border-transparent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white"
+      style={{ backgroundColor: s.color }}
+    >
       {s.name}
     </span>
   );
@@ -145,7 +151,7 @@ function GroupSelectCheckbox({
     <input
       ref={ref}
       type="checkbox"
-      className="select-checkbox"
+      className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
       title="Select all in group"
       checked={all}
       onChange={() => onSetManySelected(taskIds, !all)}
@@ -211,7 +217,7 @@ export function ListView({
           const ids = rowTasks.map((t) => t.id);
           return (
             <Fragment key={s.id}>
-              <tr className="section-label-row">
+              <tr className="hover:[&>td]:bg-transparent">
                 {multiSelectMode ? (
                   <td style={{ width: 36, verticalAlign: "middle" }}>
                     {ids.length > 0 ? (
@@ -223,20 +229,23 @@ export function ListView({
                     ) : null}
                   </td>
                 ) : null}
-                <td colSpan={8}>
-                  <span className="section-title-wrap">
-                    <span className="section-title-text">{s.name}</span>
+                <td
+                  className="border-b-0 pb-2 pt-[22px] text-[13px] font-bold"
+                  colSpan={8}
+                >
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <span className="text-[13px] font-bold">{s.name}</span>
                     <button
                       type="button"
-                      className="chip-btn section-add-inline"
+                      className="rounded-pill border border-transparent px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                       onClick={() => onAddTask(s.id)}
                     >
                       + Add task
                     </button>
-                    <div className="section-actions" data-popover-root>
+                    <div className="relative inline-flex items-center" data-popover-root>
                       <button
                         type="button"
-                        className="icon-btn section-menu-btn"
+                        className="grid place-items-center rounded-md px-1.5 py-1 text-muted transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
                         aria-label="Section options"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -257,9 +266,13 @@ export function ListView({
                         />
                       </button>
                       {pop?.k === "sectionmenu" && pop.sectionId === s.id ? (
-                        <div className="inline-popover" data-popover-root>
+                        <div
+                          className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+                          data-popover-root
+                        >
                           <button
                             type="button"
+                            className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
                             onClick={() => {
                               setPop(null);
                               onRequestRenameSection(s.id, s.name);
@@ -269,7 +282,7 @@ export function ListView({
                           </button>
                           <button
                             type="button"
-                            className="danger-option"
+                            className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-soft-danger hover:bg-hover-surface"
                             onClick={() => {
                               setPop(null);
                               void onDeleteSection(s.id);
@@ -309,16 +322,19 @@ export function ListView({
                     statuses={statuses}
                   />
                   {inlineSub?.parentId === t.id ? (
-                    <tr className="subtask-composer-row">
-                      <td colSpan={multiSelectMode ? 9 : 8}>
-                        <div className="subtask-composer">
+                    <tr>
+                      <td
+                        className="border-b! border-border-subtle! bg-subtask-composer-bg! p-2!"
+                        colSpan={multiSelectMode ? 9 : 8}
+                      >
+                        <div className="subtask-composer flex items-center gap-2.5 pl-[58px]">
                           <span
-                            className="subtask-composer-branch"
+                            className="mb-px ml-1 mr-1 h-[22px] w-3 shrink-0 rounded-bl-lg border-b-2 border-l-2 border-[rgba(111,113,119,0.55)]"
                             aria-hidden
                           />
                           <input
                             ref={subInputRef}
-                            className="input subtask-composer-input"
+                            className="min-w-0 flex-1 rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                             placeholder="Subtask name — Enter to save, Esc to cancel"
                             onKeyDown={(e) => {
                               if (e.key === "Escape") {
@@ -340,7 +356,7 @@ export function ListView({
                           />
                           <button
                             type="button"
-                            className="chip-btn"
+                            className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                             onClick={() => setInlineSub(null)}
                           >
                             Cancel
@@ -370,7 +386,7 @@ export function ListView({
           const ids = sorted.map((t) => t.id);
           return (
             <Fragment key={key}>
-              <tr className="section-label-row">
+              <tr className="hover:[&>td]:bg-transparent">
                 {multiSelectMode ? (
                   <td style={{ width: 36, verticalAlign: "middle" }}>
                     {ids.length > 0 ? (
@@ -382,8 +398,11 @@ export function ListView({
                     ) : null}
                   </td>
                 ) : null}
-                <td colSpan={8}>
-                  <span className="section-title-text">{key}</span>
+                <td
+                  className="border-b-0 pb-2 pt-[22px] text-[13px] font-bold"
+                  colSpan={8}
+                >
+                  <span className="text-[13px] font-bold">{key}</span>
                 </td>
               </tr>
               {sorted.map((t) => (
@@ -412,16 +431,19 @@ export function ListView({
                     statuses={statuses}
                   />
                   {inlineSub?.parentId === t.id ? (
-                    <tr className="subtask-composer-row">
-                      <td colSpan={multiSelectMode ? 9 : 8}>
-                        <div className="subtask-composer">
+                    <tr>
+                      <td
+                        className="border-b! border-border-subtle! bg-subtask-composer-bg! p-2!"
+                        colSpan={multiSelectMode ? 9 : 8}
+                      >
+                        <div className="subtask-composer flex items-center gap-2.5 pl-[58px]">
                           <span
-                            className="subtask-composer-branch"
+                            className="mb-px ml-1 mr-1 h-[22px] w-3 shrink-0 rounded-bl-lg border-b-2 border-l-2 border-[rgba(111,113,119,0.55)]"
                             aria-hidden
                           />
                           <input
                             ref={subInputRef}
-                            className="input subtask-composer-input"
+                            className="min-w-0 flex-1 rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                             placeholder="Subtask name — Enter to save"
                             onKeyDown={(e) => {
                               if (e.key === "Escape") {
@@ -443,7 +465,7 @@ export function ListView({
                           />
                           <button
                             type="button"
-                            className="chip-btn"
+                            className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                             onClick={() => setInlineSub(null)}
                           >
                             Cancel
@@ -459,28 +481,74 @@ export function ListView({
         });
 
   return (
-    <div className="table-wrap">
+    <div className="px-7 pb-12">
       <table
-        className={`task-table${multiSelectMode ? " task-table--multi-select" : ""}`}
+        className={clsx(
+          "w-full border-separate border-spacing-0",
+          multiSelectMode && "[&_.subtask-composer]:pl-[94px]!",
+        )}
       >
         <thead>
           <tr>
             {multiSelectMode ? (
-              <th style={{ width: 36 }} aria-label="Select for bulk" />
+              <th
+                className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+                style={{ width: 36 }}
+                aria-label="Select for bulk"
+              />
             ) : null}
-            <th style={{ width: 44 }} title="Done">
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: 44 }}
+              title="Done"
+            >
               ✓
             </th>
-            <th>Task</th>
-            <th style={{ width: "11%" }}>Status</th>
-            <th style={{ width: "10%" }} title="Add subtasks">
+            <th className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted">
+              Task
+            </th>
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: "11%" }}
+            >
+              Status
+            </th>
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: "10%" }}
+              title="Add subtasks"
+            >
               Subtasks
             </th>
-            <th style={{ width: "14%" }}>Assignee</th>
-            <th style={{ width: "11%" }}>Start</th>
-            <th style={{ width: "11%" }}>Due</th>
-            <th style={{ width: "10%" }}>Priority</th>
-            <th style={{ width: 44 }} aria-label="Actions" />
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: "14%" }}
+            >
+              Assignee
+            </th>
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: "11%" }}
+            >
+              Start
+            </th>
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: "11%" }}
+            >
+              Due
+            </th>
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: "10%" }}
+            >
+              Priority
+            </th>
+            <th
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              style={{ width: 44 }}
+              aria-label="Actions"
+            />
           </tr>
         </thead>
         <tbody>{sectionBody}</tbody>
@@ -543,7 +611,10 @@ function TaskRowMetaColumns({
         >
           <button
             type="button"
-            className={`cell-quick-btn subtask-quick-btn ${subtaskQuickAdd.count > 0 ? "is-set" : ""}`}
+            className={clsx(
+              "subtask-quick-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+              subtaskQuickAdd.count > 0 && "is-set",
+            )}
             title={
               subtaskQuickAdd.count > 0 ? "Add another subtask" : "Add subtask"
             }
@@ -559,11 +630,11 @@ function TaskRowMetaColumns({
         </td>
       ) : (
         <td
-          className="subtask-col-na"
+          className="select-none text-center text-[13px] text-muted"
           style={{ verticalAlign: "middle" }}
           title="Nested subtasks are not supported. Add subtasks from the parent task in the list."
         >
-          <span className="subtask-col-na__dash" aria-hidden>
+          <span className="opacity-45" aria-hidden>
             —
           </span>
         </td>
@@ -576,7 +647,10 @@ function TaskRowMetaColumns({
       >
         <button
           type="button"
-          className={`cell-quick-btn ${t.assigneeId ? "is-set" : ""}`}
+          className={clsx(
+            "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+            t.assigneeId && "is-set",
+          )}
           onClick={() =>
             setPop(
               pop?.k === "assign" && pop.taskId === t.id
@@ -589,9 +663,13 @@ function TaskRowMetaColumns({
           <span>{assigneeLabel}</span>
         </button>
         {pop?.k === "assign" && pop.taskId === t.id ? (
-          <div className="inline-popover" data-popover-root>
+          <div
+            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            data-popover-root
+          >
             <button
               type="button"
+              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
               onClick={() => {
                 onAssign(t.id, uid);
                 setPop(null);
@@ -601,6 +679,7 @@ function TaskRowMetaColumns({
             </button>
             <button
               type="button"
+              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
               onClick={() => {
                 onAssign(t.id, null);
                 setPop(null);
@@ -619,7 +698,10 @@ function TaskRowMetaColumns({
       >
         <button
           type="button"
-          className={`cell-quick-btn start-cell-btn ${start ? "is-set" : ""}`}
+          className={clsx(
+            "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+            start && "is-set",
+          )}
           onClick={() =>
             setPop(
               pop?.k === "start" && pop.taskId === t.id
@@ -632,17 +714,22 @@ function TaskRowMetaColumns({
           <span>{fmtDate(start)}</span>
         </button>
         {pop?.k === "start" && pop.taskId === t.id ? (
-          <div className="inline-popover inline-popover-wide" data-popover-root>
-            <div className="mini-label">Start date</div>
+          <div
+            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[220px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            data-popover-root
+          >
+            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+              Start date
+            </div>
             <input
               type="date"
-              className="input"
+              className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
               defaultValue={dateToInputValue(start)}
               onChange={(e) => onStartChange(t.id, e.target.value || null)}
             />
             <button
               type="button"
-              className="linkish-btn"
+              className="mt-1.5 cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
               onClick={() => {
                 onStartChange(t.id, null);
                 setPop(null);
@@ -661,7 +748,10 @@ function TaskRowMetaColumns({
       >
         <button
           type="button"
-          className={`cell-quick-btn due-cell-btn ${due ? "is-set" : ""}`}
+          className={clsx(
+            "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+            due && "is-set",
+          )}
           onClick={() =>
             setPop(
               pop?.k === "due" && pop.taskId === t.id
@@ -672,25 +762,32 @@ function TaskRowMetaColumns({
         >
           <IconCalendar width={14} height={14} />
           <span
-            className={
-              dueState !== "none" ? `due-soft due-soft-${dueState}` : ""
-            }
+            className={clsx(
+              dueState !== "none" && "font-medium normal-case",
+              dueState === "overdue" && "text-soft-danger",
+              dueState === "soon" && "text-prio-med-fg",
+            )}
           >
             {fmtDate(due)}
           </span>
         </button>
         {pop?.k === "due" && pop.taskId === t.id ? (
-          <div className="inline-popover inline-popover-wide" data-popover-root>
-            <div className="mini-label">Due date</div>
+          <div
+            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[220px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            data-popover-root
+          >
+            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+              Due date
+            </div>
             <input
               type="date"
-              className="input"
+              className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
               defaultValue={dateToInputValue(due)}
               onChange={(e) => onDueChange(t.id, e.target.value || null)}
             />
             <button
               type="button"
-              className="linkish-btn"
+              className="mt-1.5 cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
               onClick={() => {
                 onDueChange(t.id, null);
                 setPop(null);
@@ -709,7 +806,7 @@ function TaskRowMetaColumns({
       >
         <button
           type="button"
-          className="prio-quick"
+          className="cursor-pointer rounded-pill border border-border-subtle bg-app px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-fg data-[p=low]:border-transparent data-[p=low]:bg-prio-low-bg data-[p=low]:text-prio-low-fg data-[p=medium]:border-transparent data-[p=medium]:bg-prio-med-bg data-[p=medium]:text-prio-med-fg data-[p=high]:border-transparent data-[p=high]:bg-prio-high-bg data-[p=high]:text-prio-high-fg data-[p=urgent]:border-transparent data-[p=urgent]:bg-prio-urgent-bg data-[p=urgent]:text-prio-urgent-fg"
           data-p={t.priority}
           onClick={() =>
             setPop(
@@ -722,11 +819,15 @@ function TaskRowMetaColumns({
           {t.priority}
         </button>
         {pop?.k === "prio" && pop.taskId === t.id ? (
-          <div className="inline-popover" data-popover-root>
+          <div
+            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            data-popover-root
+          >
             {prios.map((p) => (
               <button
                 key={p}
                 type="button"
+                className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
                 onClick={() => {
                   onPriorityChange(t.id, p);
                   setPop(null);
@@ -744,7 +845,7 @@ function TaskRowMetaColumns({
       >
         <button
           type="button"
-          className="icon-btn row-more-btn"
+          className="grid size-8 place-items-center rounded-card font-black tracking-wide text-muted transition-colors hover:bg-hover-surface hover:text-fg"
           aria-label="Task actions"
           onClick={(e) => {
             e.stopPropagation();
@@ -758,9 +859,13 @@ function TaskRowMetaColumns({
           ···
         </button>
         {pop?.k === "taskmenu" && pop.taskId === t.id ? (
-          <div className="inline-popover" data-popover-root>
+          <div
+            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            data-popover-root
+          >
             <button
               type="button"
+              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
               onClick={() => {
                 setPop(null);
                 onTaskClick(t);
@@ -771,7 +876,7 @@ function TaskRowMetaColumns({
             {subtaskQuickAdd ? (
               <button
                 type="button"
-                className="task-menu-with-icon"
+                className="flex w-full items-center gap-2 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
                 onClick={() => {
                   setPop(null);
                   onOpenSubtask();
@@ -783,7 +888,7 @@ function TaskRowMetaColumns({
             ) : null}
             <button
               type="button"
-              className="danger-option"
+              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-soft-danger hover:bg-hover-surface"
               onClick={() => {
                 setPop(null);
                 void onDeleteTask(t.id);
@@ -849,12 +954,12 @@ function TaskRow({
 
   return (
     <>
-      <tr className="task-row">
+      <tr className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:px-3 [&>td]:py-1.5 hover:[&>td]:bg-row-hover">
         {multiSelectMode ? (
           <td style={{ verticalAlign: "middle" }}>
             <input
               type="checkbox"
-              className="select-checkbox"
+              className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
               title="Select for bulk actions"
               checked={selectedIds.has(t.id)}
               onChange={() => onToggleSelect(t.id)}
@@ -865,7 +970,7 @@ function TaskRow({
         <td style={{ verticalAlign: "middle" }}>
           <button
             type="button"
-            className="checkbox todo-complete-btn"
+            className="mx-auto block size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
             data-done={t.completed ? "true" : "false"}
             title={t.completed ? "Mark incomplete" : "Mark complete"}
             onClick={(e) => {
@@ -909,12 +1014,15 @@ function TaskRow({
           }
         };
         return (
-          <tr key={st.id} className="task-row task-row-sub">
+          <tr
+            key={st.id}
+            className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:px-3 [&>td]:py-1.5 hover:[&>td]:bg-row-hover"
+          >
             {multiSelectMode ? (
-              <td style={{ verticalAlign: "middle" }}>
+             <td style={{ verticalAlign: "middle" }}>
                 <input
                   type="checkbox"
-                  className="select-checkbox"
+                  className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
                   checked={selectedIds.has(st.id)}
                   onChange={() => onToggleSelect(st.id)}
                   onClick={(e) => e.stopPropagation()}
@@ -924,7 +1032,7 @@ function TaskRow({
             <td style={{ verticalAlign: "middle" }}>
               <button
                 type="button"
-                className="checkbox todo-complete-btn"
+                className="mx-auto block size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
                 data-done={st.completed ? "true" : "false"}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -933,16 +1041,19 @@ function TaskRow({
               />
             </td>
             <td
-              className="subtask-task-cell"
               onClick={() => onTaskClick(st)}
               onKeyDown={handleSubKeyDown}
               style={{ cursor: "pointer" }}
             >
-              <div
-                className={`task-tree-line ${isLastSubInTree ? "task-tree-line--end" : "task-tree-line--cont"}`}
-              >
-                <span className="task-tree-line__guide" aria-hidden />
-                <span className="task-tree-line__text">{st.title}</span>
+              <div className="flex min-h-7 items-center gap-1.5">
+                <span
+                  className={clsx(
+                    "relative h-7 min-h-7 w-[22px] shrink-0 self-stretch before:pointer-events-none after:pointer-events-none before:absolute before:left-2.5 before:top-0 before:border-l-2 before:border-[rgba(111,113,119,0.55)] after:absolute after:left-2.5 after:top-1/2 after:h-0 after:w-3 after:-translate-y-px after:border-t-2 after:border-[rgba(111,113,119,0.55)]",
+                    isLastSubInTree ? "before:bottom-1/2" : "before:bottom-0",
+                  )}
+                  aria-hidden
+                />
+                <span className="text-[13px] font-semibold">{st.title}</span>
               </div>
             </td>
             <TaskRowMetaColumns

@@ -12,7 +12,6 @@ import type React from "react";
 import { useState } from "react";
 import { updateTask } from "../services/db";
 import type { SectionDoc, StatusDoc, TaskDoc } from "../types/models";
-import "../components/layout/layout.css";
 
 type Props = {
   uid: string;
@@ -66,7 +65,7 @@ export function BoardView({
       onDragCancel={() => setActiveId(null)}
       onDragEnd={(e) => void onDragEnd(e)}
     >
-      <div className="board">
+      <div className="flex items-start gap-3.5 overflow-x-auto px-7 pb-10">
         {sections.map((s) => (
           <Column
             key={s.id}
@@ -80,8 +79,7 @@ export function BoardView({
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <div
-            className="board-card"
-            style={{ cursor: "grabbing", width: 260 }}
+            className="w-[260px] cursor-grabbing rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold"
           >
             {activeTask.title}
           </div>
@@ -105,11 +103,13 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id: section.id });
   return (
     <div
-      className="board-col"
+      className="w-[280px] shrink-0 rounded-[10px] border border-border-subtle bg-board p-2.5 data-[over=true]:outline data-[over=true]:outline-2 data-[over=true]:outline-dashed data-[over=true]:outline-share"
       ref={setNodeRef}
       data-over={isOver ? "true" : "false"}
     >
-      <h3>{section.name}</h3>
+      <h3 className="mb-2.5 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+        {section.name}
+      </h3>
       {tasks.map((t) => (
         <TaskCard
           key={t.id}
@@ -154,7 +154,7 @@ function TaskCard({
       style={style}
       {...listeners}
       {...attributes}
-      className="board-card"
+      className="mb-2 cursor-grab rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold active:cursor-grabbing"
       onDoubleClick={() => onTaskClick(task)}
       onKeyDown={handleKeyDown}
       role="button"
@@ -181,7 +181,7 @@ function StatusTag({
   if (!s) return null;
   return (
     <span
-      className="status-badge"
+      className="inline-block rounded-pill border border-transparent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white"
       style={{
         backgroundColor: s.color,
       }}

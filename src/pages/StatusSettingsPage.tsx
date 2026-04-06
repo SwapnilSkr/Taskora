@@ -10,7 +10,6 @@ import {
 } from '../services/db'
 import type { StatusDoc } from '../types/models'
 import { IconPlus, IconTrash } from '../components/icons'
-import '../components/layout/layout.css'
 
 export function StatusSettingsPage() {
   const { user } = useAuth()
@@ -87,57 +86,66 @@ export function StatusSettingsPage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px 48px', maxWidth: 800 }}>
-      <header style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="max-w-[800px] px-8 pb-12 pt-7">
+      <header className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 style={{ margin: '0 0 8px', fontSize: 26, letterSpacing: '-0.02em' }}>Status tags</h1>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+          <h1 className="mb-2 mt-0 text-[26px] font-bold tracking-tight">
+            Status tags
+          </h1>
+          <p className="m-0 text-muted">
             Manage the status options available for your tasks and subtasks.
           </p>
         </div>
-        <button type="button" className="btn-primary" onClick={onAddStatus}>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-pill bg-share px-3.5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-share-hover"
+          onClick={onAddStatus}
+        >
           <IconPlus width={18} height={18} />
           Add status
         </button>
       </header>
 
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div className="grid gap-3">
         {statuses.map((s) => (
-          <div key={s.id} className="status-settings-card">
-            <div className="status-color-picker-wrap">
-              <input 
-                type="color" 
-                value={s.color} 
+          <div
+            key={s.id}
+            className="flex items-center gap-4 rounded-xl border border-border-subtle bg-raised px-5 py-4 transition-colors duration-150 hover:border-border hover:bg-hover-surface"
+          >
+            <div className="relative size-8 shrink-0 overflow-hidden rounded-card border border-border-subtle transition-transform active:scale-95">
+              <input
+                className="absolute -left-2.5 -top-2.5 h-[52px] w-[52px] cursor-pointer border-none bg-transparent p-0"
+                type="color"
+                value={s.color}
                 onChange={(e) => updateStatus(uid, s.id, { color: e.target.value })}
                 title="Change color"
               />
             </div>
             
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <button 
+            <div className="min-w-0 flex-1">
+              <button
                 type="button"
-                className="linkish-btn-inline"
-                style={{ fontWeight: 700, fontSize: 16, display: 'block', padding: '2px 6px', margin: '-2px -6px', borderRadius: 6, transition: 'background 0.15s' }}
+                className="-m-1.5 block rounded-md px-1.5 py-0.5 text-left text-base font-bold transition-colors hover:bg-hover-surface"
                 onClick={() => onRename(s)}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 title="Rename status"
               >
                 {s.name}
               </button>
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <label className="status-checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={s.isDefault} 
+              <div className="mt-2.5 flex gap-2">
+                <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover-surface hover:text-fg">
+                  <input
+                    className="size-3.5 cursor-pointer rounded border-[1.5px] border-[#6f7177] accent-share"
+                    type="checkbox"
+                    checked={s.isDefault}
                     onChange={() => onToggleDefault(s)}
                   />
                   Default
                 </label>
-                <label className="status-checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={s.isCompleted} 
+                <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover-surface hover:text-fg">
+                  <input
+                    className="size-3.5 cursor-pointer rounded border-[1.5px] border-[#6f7177] accent-share"
+                    type="checkbox"
+                    checked={s.isCompleted}
                     onChange={() => onToggleCompleted(s)}
                   />
                   Completed
@@ -145,15 +153,17 @@ export function StatusSettingsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span className="status-badge" style={{ backgroundColor: s.color, opacity: 0.85, padding: '6px 12px' }}>
+            <div className="flex items-center gap-3">
+              <span
+                className="inline-block rounded-pill border border-transparent px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white opacity-[0.85]"
+                style={{ backgroundColor: s.color }}
+              >
                 {s.name}
               </span>
-              <button 
-                type="button" 
-                className="btn-icon" 
+              <button
+                type="button"
+                className="grid size-8 place-items-center rounded-card text-muted transition-colors hover:bg-hover-surface hover:text-fg"
                 onClick={() => onDelete(s)}
-                style={{ color: 'var(--text-muted)' }}
                 title="Delete status"
               >
                 <IconTrash width={18} height={18} />
@@ -164,8 +174,8 @@ export function StatusSettingsPage() {
       </div>
 
       {statuses.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed var(--border-subtle)', borderRadius: 12 }}>
-          <p style={{ color: 'var(--text-muted)' }}>No status tags found. Add one to get started!</p>
+        <div className="rounded-xl border border-dashed border-border-subtle py-12 text-center">
+          <p className="text-muted">No status tags found. Add one to get started!</p>
         </div>
       )}
     </div>

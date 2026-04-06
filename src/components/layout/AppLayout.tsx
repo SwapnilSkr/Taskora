@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom'
 import { CommandPalette } from '../CommandPalette'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
-import './layout.css'
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
@@ -30,11 +29,11 @@ export function AppLayout() {
   }, [])
 
   return (
-    <div className="app-shell">
+    <div className="flex min-h-screen bg-app">
       <Sidebar />
-      <div className="main-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopBar onOpenSearch={onOpenSearch} />
-        <main className="main-scroll">
+        <main className="min-h-0 flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>

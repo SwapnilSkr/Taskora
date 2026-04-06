@@ -29,8 +29,13 @@ export function RichTextContent({ text, className }: Props) {
     const isBlob = src.startsWith('blob:')
     nodes.push(
       isBlob ? (
-        <span key={key++} className="rich-inline-img-link rich-inline-img-blob">
-          <img src={src} alt={alt} className="rich-inline-img" decoding="async" />
+        <span key={key++} className="cursor-default">
+          <img
+            src={src}
+            alt={alt}
+            className="my-1.5 block max-h-[240px] max-w-full rounded-lg border border-border-subtle object-contain align-middle"
+            decoding="async"
+          />
         </span>
       ) : (
         <a
@@ -38,9 +43,14 @@ export function RichTextContent({ text, className }: Props) {
           href={src}
           target="_blank"
           rel="noreferrer"
-          className="rich-inline-img-link"
+          className="my-1.5 inline-block max-w-full overflow-hidden rounded-lg align-middle"
         >
-          <img src={src} alt={alt} className="rich-inline-img" decoding="async" />
+          <img
+            src={src}
+            alt={alt}
+            className="block max-h-[240px] max-w-full object-contain align-middle"
+            decoding="async"
+          />
         </a>
       ),
     )

@@ -15,7 +15,7 @@ function Protected({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth()
   if (!ready) {
     return (
-      <div style={{ padding: 32, color: 'var(--text-muted)' }}>Loading…</div>
+      <div className="p-8 text-muted">Loading…</div>
     )
   }
   if (!user) return <Navigate to="/login" replace />

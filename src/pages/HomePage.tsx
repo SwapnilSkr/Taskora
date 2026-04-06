@@ -1,10 +1,9 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import '../components/layout/layout.css'
 import { useAuth } from '../context/AuthContext'
 import { useModals } from '../context/ModalContext'
 import { createProject, subscribeProjects } from '../services/db'
 import type { ProjectDoc } from '../types/models'
-import { useEffect, useState } from 'react'
 
 export function HomePage() {
   const { user } = useAuth()
@@ -33,52 +32,40 @@ export function HomePage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px 48px' }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 26, letterSpacing: '-0.03em' }}>
+    <div className="px-8 pb-12 pt-7">
+      <h1 className="mb-2 mt-0 text-[26px] font-bold tracking-tight">
         Home
       </h1>
-      <p style={{ margin: 0, color: 'var(--text-muted)', maxWidth: 640, lineHeight: 1.6 }}>
+      <p className="m-0 max-w-[640px] leading-relaxed text-muted">
         Taskora mirrors the Asana-style workflows you expect — list, board, timeline, Gantt, approvals, workload, time tracking, dependencies, and attachments via Firebase Storage.
       </p>
 
-      <div style={{ marginTop: 28 }}>
-        <button type="button" className="btn-create" style={{ width: 'auto', paddingInline: 22 }} onClick={() => void onCreate()}>
+      <div className="mt-7">
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-pill bg-create px-5 py-2.5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-create-hover"
+          onClick={() => void onCreate()}
+        >
           New project
         </button>
       </div>
 
-      <div
-        style={{
-          marginTop: 28,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-          gap: 14,
-        }}
-      >
+      <div className="mt-7 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
         {projects.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => nav(`/project/${p.id}/list`)}
-            style={{
-              textAlign: 'left',
-              padding: 16,
-              borderRadius: 12,
-              border: '1px solid var(--border-subtle)',
-              background: '#1b1c1f',
-              cursor: 'pointer',
-            }}
+            className="cursor-pointer rounded-xl border border-border-subtle bg-board p-4 text-left"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="flex items-center gap-2.5">
               <span
-                className="project-dot"
-                style={{ background: p.color, width: 12, height: 12 }}
+                className="h-3 w-3 shrink-0 rounded-[3px]"
+                style={{ background: p.color }}
               />
-              <span style={{ fontWeight: 700 }}>{p.name}</span>
+              <span className="font-bold">{p.name}</span>
             </div>
-            <div style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: 12 }}>
-              Open list view
-            </div>
+            <div className="mt-2 text-xs text-muted">Open list view</div>
           </button>
         ))}
       </div>

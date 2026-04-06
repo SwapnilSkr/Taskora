@@ -1,7 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import '../components/layout/layout.css'
 
 function GoogleMark() {
   return (
@@ -25,6 +24,12 @@ function GoogleMark() {
     </svg>
   )
 }
+
+const fieldLabel =
+  'mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0'
+
+const input =
+  'w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]'
 
 export function LoginPage() {
   const { signInEmail, signUpEmail, signInGoogle } = useAuth()
@@ -52,13 +57,17 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <h1>Welcome to Taskora</h1>
-        <p>Pro-grade tasks, timelines, and workloads — anchored to your Firebase project.</p>
+    <div className="grid min-h-screen place-items-center bg-[radial-gradient(1200px_600px_at_20%_0%,var(--color-login-gradient-start)_0%,var(--color-app)_55%)] p-6">
+      <div className="w-full max-w-[420px] rounded-[14px] border border-border bg-[rgba(37,39,40,0.92)] p-7 shadow-popover backdrop-blur-md">
+        <h1 className="m-0 mb-1.5 text-[22px] font-bold tracking-tight">
+          Welcome to Taskora
+        </h1>
+        <p className="mb-[18px] text-muted">
+          Pro-grade tasks, timelines, and workloads — anchored to your Firebase project.
+        </p>
         <button
           type="button"
-          className="btn-google"
+          className="mb-[18px] flex w-full items-center justify-center gap-2.5 rounded-pill border border-border bg-white px-3.5 py-2.5 text-[13px] font-semibold text-google-btn transition-colors hover:border-google-border-hover hover:bg-[#f8f9fa] disabled:cursor-not-allowed disabled:opacity-[0.65] [&_svg]:shrink-0"
           disabled={busy}
           onClick={() => {
             setError(null)
@@ -74,24 +83,24 @@ export function LoginPage() {
           <GoogleMark />
           Continue with Google
         </button>
-        <div className="login-divider">or email</div>
+        <div className="my-1 mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-muted before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+          or email
+        </div>
         <form onSubmit={(e) => void onSubmit(e)}>
           {mode === 'up' ? (
-            <div className="field-label" style={{ marginTop: 0 }}>
-              Display name
-            </div>
+            <div className={`${fieldLabel} !mt-0`}>Display name</div>
           ) : null}
           {mode === 'up' ? (
             <input
-              className="input"
+              className={input}
               placeholder="Ada Lovelace"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           ) : null}
-          <div className="field-label">Email</div>
+          <div className={fieldLabel}>Email</div>
           <input
-            className="input"
+            className={input}
             type="email"
             autoComplete="email"
             placeholder="you@company.com"
@@ -99,9 +108,9 @@ export function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <div className="field-label">Password</div>
+          <div className={fieldLabel}>Password</div>
           <input
-            className="input"
+            className={input}
             type="password"
             autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
             placeholder="••••••••"
@@ -111,16 +120,18 @@ export function LoginPage() {
             minLength={6}
           />
           {error ? (
-            <div style={{ color: '#ff9c9c', marginTop: 10, fontSize: 13 }}>
-              {error}
-            </div>
+            <div className="mt-2.5 text-[13px] text-[#ff9c9c]">{error}</div>
           ) : null}
-          <div className="login-actions">
-            <button className="btn-primary" type="submit" disabled={busy}>
+          <div className="mt-3.5 flex gap-2.5">
+            <button
+              className="flex-1 rounded-pill bg-share px-3.5 py-2.5 font-bold text-white transition-colors hover:bg-share-hover disabled:opacity-60"
+              type="submit"
+              disabled={busy}
+            >
               {mode === 'in' ? 'Sign in' : 'Create account'}
             </button>
             <button
-              className="btn-secondary"
+              className="flex-1 rounded-pill border border-border px-3.5 py-2.5 font-bold transition-colors hover:bg-hover-surface"
               type="button"
               onClick={() => {
                 setMode(mode === 'in' ? 'up' : 'in')

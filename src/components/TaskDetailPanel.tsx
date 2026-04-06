@@ -27,7 +27,6 @@ import {
   markdownImageLine,
   textHasMarkdownImages,
 } from '../utils/imagePaste'
-import './layout/layout.css'
 
 type Props = {
   uid: string
@@ -136,13 +135,18 @@ export function TaskDetailPanel({
 
   return (
     <>
-      <button type="button" className="panel-backdrop" onClick={onClose} aria-label="Close" />
-      <aside className="task-panel">
-        <div className="panel-header">
+      <button
+        type="button"
+        className="fixed inset-0 z-[90] cursor-default border-none bg-black/45 p-0"
+        onClick={onClose}
+        aria-label="Close"
+      />
+      <aside className="fixed right-0 top-0 z-[100] flex h-full w-full max-w-[520px] flex-col border-l border-border bg-raised shadow-panel">
+        <div className="flex items-start gap-2.5 border-b border-border-subtle px-[18px] py-4">
           <label className="sr-only">Completed</label>
           <button
             type="button"
-            className="checkbox"
+            className="size-4 shrink-0 rounded border-[1.5px] border-[#6f7177] shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
             data-done={t.completed ? 'true' : 'false'}
             title="Mark complete"
             onClick={() => {
@@ -155,14 +159,13 @@ export function TaskDetailPanel({
             }}
           />
           <input
-            className="input"
-            style={{ border: 'none', background: 'transparent', fontSize: 18, fontWeight: 700 }}
+            className="flex-1 border-none bg-transparent text-lg font-bold outline-none"
             value={t.title}
             onChange={(e) => void savePatch({ title: e.target.value })}
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 6, padding: '0 14px', borderBottom: '1px solid var(--border-subtle)' }}>
+        <div className="flex gap-1.5 border-b border-border-subtle px-3.5">
           {(
             [
               ['details', 'Details'] as const,
@@ -176,22 +179,25 @@ export function TaskDetailPanel({
             <button
               key={k}
               type="button"
-              className="tab"
+              className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted transition-colors hover:text-fg data-[active=true]:border-white data-[active=true]:text-fg"
               data-active={tab === k ? 'true' : 'false'}
               onClick={() => setTab(k)}
-              style={{ marginBottom: 0, borderBottom: tab === k ? '2px solid #fff' : '2px solid transparent' }}
             >
               {lab}
             </button>
           ))}
         </div>
 
-        <div className="panel-body">
+        <div className="flex-1 overflow-auto px-[18px] py-4">
           {tab === 'details' ? (
             <>
-              <div className="field-label field-label-row">
-                <span>Description</span>
-                <span className="field-hint">Paste or attach images (⌘V / Ctrl+V)</span>
+              <div className="mt-3.5 flex flex-wrap items-center gap-x-3.5 gap-y-2 first:mt-0">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                  Description
+                </span>
+                <span className="text-[11px] font-medium normal-case tracking-normal text-muted opacity-90">
+                  Paste or attach images (⌘V / Ctrl+V)
+                </span>
                 <input
                   ref={descImageInputRef}
                   type="file"
@@ -223,7 +229,7 @@ export function TaskDetailPanel({
                 />
                 <button
                   type="button"
-                  className="linkish-btn-inline"
+                  className="ml-auto cursor-pointer border-none bg-transparent p-0 text-[12px] font-semibold text-share disabled:cursor-not-allowed disabled:opacity-45"
                   disabled={imageUploadBusy !== 'idle'}
                   onClick={() => descImageInputRef.current?.click()}
                 >
@@ -236,7 +242,7 @@ export function TaskDetailPanel({
                 onMarkdownChange={(md) => void saveDescriptionNext(md)}
                 disabled={false}
                 placeholder="What is this task about?"
-                className="textarea"
+                className="min-h-[100px] w-full resize-y rounded-card border border-border bg-app px-3 py-2 text-[13px] leading-[1.45]"
                 onPasteImageBlob={async (blob) => {
                   setImageUploadBusy('desc')
                   try {
@@ -253,12 +259,12 @@ export function TaskDetailPanel({
                 }}
               />
 
-              <div className="row-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <div className="field-label">Start date</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Start date</div>
                   <input
                     type="date"
-                    className="input"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={dateInputValue(tsToDate(t.startDate))}
                     onChange={(e) =>
                       void savePatch({ startDate: fromDateInput(e.target.value) })
@@ -266,10 +272,10 @@ export function TaskDetailPanel({
                   />
                 </div>
                 <div>
-                  <div className="field-label">Due date</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Due date</div>
                   <input
                     type="date"
-                    className="input"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={dateInputValue(tsToDate(t.dueDate))}
                     onChange={(e) =>
                       void savePatch({ dueDate: fromDateInput(e.target.value) })
@@ -278,11 +284,11 @@ export function TaskDetailPanel({
                 </div>
               </div>
 
-              <div className="row-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <div className="field-label">Status</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Status</div>
                   <select
-                    className="select"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={t.statusId ?? ''}
                     onChange={(e) => {
                       const sid = e.target.value || null
@@ -302,9 +308,9 @@ export function TaskDetailPanel({
                   </select>
                 </div>
                 <div>
-                  <div className="field-label">Priority</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Priority</div>
                   <select
-                    className="select"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={t.priority}
                     onChange={(e) =>
                       void savePatch({
@@ -320,11 +326,11 @@ export function TaskDetailPanel({
                 </div>
               </div>
 
-              <div className="row-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <div className="field-label">Assignee</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Assignee</div>
                   <select
-                    className="select"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={t.assigneeId ?? ''}
                     onChange={(e) =>
                       void savePatch({
@@ -337,9 +343,9 @@ export function TaskDetailPanel({
                   </select>
                 </div>
                 <div>
-                  <div className="field-label">Approval</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Approval</div>
                   <select
-                    className="select"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={t.approvalStatus}
                     onChange={(e) =>
                       void savePatch({
@@ -355,12 +361,12 @@ export function TaskDetailPanel({
                 </div>
               </div>
 
-              <div className="row-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <div className="field-label">Estimate (minutes)</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Estimate (minutes)</div>
                   <input
                     type="number"
-                    className="input"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={t.estimatedMinutes ?? ''}
                     placeholder="e.g. 120"
                     onChange={(e) =>
@@ -373,10 +379,10 @@ export function TaskDetailPanel({
                   />
                 </div>
                 <div>
-                  <div className="field-label">Tracked (minutes)</div>
+                  <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Tracked (minutes)</div>
                   <input
                     type="number"
-                    className="input"
+                    className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                     value={t.trackedMinutes ?? ''}
                     placeholder="Log time"
                     onChange={(e) =>
@@ -390,13 +396,15 @@ export function TaskDetailPanel({
                 </div>
               </div>
 
-              <div className="field-label">Tags</div>
-              <div className="tag-input-row">
+              <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">
+                Tags
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
                 {t.tags.map((tag) => (
                   <button
                     key={tag}
                     type="button"
-                    className="tag-chip"
+                    className="rounded-pill bg-tag-chip px-2.5 py-1 text-xs text-muted"
                     onClick={() =>
                       void savePatch({ tags: t.tags.filter((x) => x !== tag) })
                     }
@@ -406,7 +414,7 @@ export function TaskDetailPanel({
                   </button>
                 ))}
                 <input
-                  className="input"
+                  className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                   style={{ flex: '1 1 140px', minWidth: 120 }}
                   placeholder="Add tag"
                   value={tagDraft}
@@ -422,9 +430,9 @@ export function TaskDetailPanel({
                 />
               </div>
 
-              <div className="field-label">Dependencies (task ids, comma-separated)</div>
+              <div className="mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">Dependencies (task ids, comma-separated)</div>
               <input
-                className="input"
+                className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
                 value={t.dependencies.join(', ')}
                 onChange={(e) =>
                   void savePatch({
@@ -439,8 +447,7 @@ export function TaskDetailPanel({
               <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
                 <button
                   type="button"
-                  className="btn-secondary"
-                  style={{ borderRadius: 8, padding: '10px 12px' }}
+                  className="rounded-lg border border-border px-3 py-2.5 font-bold"
                   onClick={() => {
                     void (async () => {
                       const ok = await confirm({
@@ -459,7 +466,7 @@ export function TaskDetailPanel({
                   Delete task
                 </button>
                 <div style={{ flex: 1 }} />
-                <div style={{ color: 'var(--text-muted)', fontSize: 12, alignSelf: 'center' }}>
+                <div className="self-center text-xs text-muted">
                   Updated {fmtDateFull(tsToDate(t.updatedAt))}
                 </div>
               </div>
@@ -469,10 +476,13 @@ export function TaskDetailPanel({
           {tab === 'subtasks' && !isSubtask ? (
             <div>
               {subtasks.map((st) => (
-                <div key={st.id} className="board-card board-card--interactive">
+                <div
+                  key={st.id}
+                  className="mb-2 cursor-default rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold"
+                >
                   <button
                     type="button"
-                    className="subtask-open-btn"
+                    className="w-full cursor-pointer border-none bg-transparent p-0 text-left font-semibold text-share hover:underline"
                     onClick={() => {
                       setTab('details')
                       onOpenTask?.(st)
@@ -484,8 +494,7 @@ export function TaskDetailPanel({
               ))}
               <button
                 type="button"
-                className="btn-add-task"
-                style={{ marginTop: 10 }}
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-pill border border-border bg-raised px-3 py-2 text-[13px] font-semibold transition-colors hover:bg-hover-surface"
                 onClick={() => {
                   void (async () => {
                     const title = await prompt({
@@ -522,16 +531,16 @@ export function TaskDetailPanel({
               {comments.map((c) => (
                 <div
                   key={c.id}
-                  className="comment-row"
+                  className="border-b border-border-subtle py-2.5 text-[13px]"
                 >
-                  <div className="comment-row-meta">
+                  <div className="mb-1 flex items-center justify-between gap-2.5 text-xs text-muted">
                     <span>
                       {c.authorName || 'Teammate'} ·{' '}
                       {fmtDateFull(tsToDate(c.createdAt))}
                     </span>
                     <button
                       type="button"
-                      className="linkish-btn-inline comment-delete"
+                      className="shrink-0 cursor-pointer border-none bg-transparent p-0 text-[12px] font-semibold text-share"
                       onClick={() => {
                         void (async () => {
                           const ok = await confirm({
@@ -550,14 +559,16 @@ export function TaskDetailPanel({
                       Delete
                     </button>
                   </div>
-                  <div className="comment-body">
+                  <div className="text-[13px] text-fg">
                     <RichTextContent text={c.text} />
                   </div>
                 </div>
               ))}
-              <div className="field-label field-label-row">
+              <div className="mb-1.5 mt-3.5 flex flex-wrap items-center gap-x-3.5 gap-y-2 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0">
                 <span>New comment</span>
-                <span className="field-hint">Images: ⌘V / Ctrl+V or attach</span>
+                <span className="text-[11px] font-medium normal-case tracking-normal text-muted opacity-90">
+                  Images: ⌘V / Ctrl+V or attach
+                </span>
                 <input
                   ref={commentImageInputRef}
                   type="file"
@@ -596,7 +607,7 @@ export function TaskDetailPanel({
                 />
                 <button
                   type="button"
-                  className="linkish-btn-inline"
+                  className="ml-auto cursor-pointer border-none bg-transparent p-0 text-[12px] font-semibold text-share disabled:cursor-not-allowed disabled:opacity-45"
                   disabled={imageUploadBusy !== 'idle'}
                   onClick={() => commentImageInputRef.current?.click()}
                 >
@@ -604,7 +615,7 @@ export function TaskDetailPanel({
                 </button>
               </div>
               <textarea
-                className="textarea"
+                className="min-h-[100px] w-full resize-y rounded-card border border-border bg-app px-3 py-2 text-[13px] leading-[1.45]"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 onPaste={(e) => {
@@ -637,23 +648,22 @@ export function TaskDetailPanel({
               />
               {textHasMarkdownImages(commentText) ? (
                 <>
-                  <div className="field-label" style={{ marginTop: 8 }}>
+                  <div className="mb-1.5 mt-2 text-[11px] font-bold uppercase tracking-wider text-muted">
                     Preview
                   </div>
-                  <div className="rich-preview-box">
+                  <div className="rounded-card border border-border-subtle bg-app px-3 py-2.5 text-[13px] text-fg">
                     <RichTextContent text={commentText} />
                   </div>
                 </>
               ) : null}
               {imageUploadBusy === 'comment' ? (
-                <p className="field-hint" style={{ marginTop: 6 }}>
+                <p className="mt-1.5 text-[11px] font-medium normal-case tracking-normal text-muted opacity-90">
                   Finishing image upload…
                 </p>
               ) : null}
               <button
                 type="button"
-                className="btn-primary"
-                style={{ marginTop: 10, width: '100%' }}
+                className="mt-2.5 w-full rounded-pill bg-share px-3.5 py-2.5 font-bold text-white transition-colors hover:bg-share-hover"
                 disabled={
                   imageUploadBusy !== 'idle' || commentText.includes('blob:')
                 }
@@ -689,20 +699,20 @@ export function TaskDetailPanel({
                   void uploadTaskFile(uid, projectId, t.id, f).then(onSaved)
                 }}
               />
-              <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
+              <div className="mt-3 grid gap-2">
                 {attachments.map((a) => (
-                  <div key={a.id} className="file-attachment-row">
+                  <div key={a.id} className="flex items-stretch gap-2.5">
                     <a
                       href={a.downloadURL}
                       target="_blank"
                       rel="noreferrer"
-                      className="board-card file-attachment-link"
+                      className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold text-inherit no-underline"
                     >
                       {a.name} · {(a.size / 1024).toFixed(1)} KB
                     </a>
                     <button
                       type="button"
-                      className="linkish-btn-inline file-delete-btn"
+                      className="shrink-0 self-center cursor-pointer border-none bg-transparent p-0 text-[12px] font-semibold text-share"
                       onClick={() => {
                         void (async () => {
                           const ok = await confirm({

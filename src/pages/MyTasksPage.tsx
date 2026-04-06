@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
-import '../components/layout/layout.css'
+import { TaskDetailPanel } from '../components/TaskDetailPanel'
 import { useAuth } from '../context/AuthContext'
 import { useAggregatedTasks } from '../hooks/useAggregatedTasks'
 import type { TaskDoc } from '../types/models'
 import { fmtDate, tsToDate } from '../utils/format'
-import { TaskDetailPanel } from '../components/TaskDetailPanel'
 
 export function MyTasksPage() {
   const { user } = useAuth()
@@ -20,22 +19,15 @@ export function MyTasksPage() {
   } | null>(null)
 
   return (
-    <div style={{ padding: '28px 32px 48px' }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 26 }}>My tasks</h1>
-      <p style={{ margin: 0, color: 'var(--text-muted)', maxWidth: 720 }}>
+    <div className="px-8 pb-12 pt-7">
+      <h1 className="mb-2 mt-0 text-[26px] font-bold">My tasks</h1>
+      <p className="m-0 max-w-[720px] text-muted">
         Everything assigned to you across projects — similar to Asana &quot;My tasks&quot;.
       </p>
 
-      <div
-        style={{
-          marginTop: 18,
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 10,
-          overflow: 'hidden',
-        }}
-      >
+      <div className="mt-[18px] overflow-hidden rounded-modal border border-border-subtle">
         {mine.length === 0 ? (
-          <div style={{ padding: 18, color: 'var(--text-muted)' }}>
+          <div className="p-[18px] text-muted">
             Assign tasks to yourself from the task pane to see them here.
           </div>
         ) : (
@@ -44,30 +36,16 @@ export function MyTasksPage() {
               key={`${project.id}-${t.id}`}
               type="button"
               onClick={() => setSelected({ projectId: project.id, task: t })}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                padding: '12px 14px',
-                borderBottom: '1px solid var(--border-subtle)',
-                background: 'transparent',
-                display: 'grid',
-                gridTemplateColumns: '1fr 140px 120px',
-                gap: 12,
-                alignItems: 'center',
-              }}
+              className="grid w-full cursor-pointer grid-cols-[1fr_140px_120px] items-center gap-3 border-b border-border-subtle bg-transparent px-3.5 py-3 text-left last:border-b-0"
             >
               <div>
-                <div style={{ fontWeight: 700 }}>{t.title}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {project.name}
-                </div>
+                <div className="font-bold">{t.title}</div>
+                <div className="mt-1 text-xs text-muted">{project.name}</div>
               </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+              <div className="text-[13px] text-muted">
                 {fmtDate(tsToDate(t.dueDate))}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {t.completed ? 'Done' : 'Open'}
-              </div>
+              <div className="text-xs text-muted">{t.completed ? 'Done' : 'Open'}</div>
             </button>
           ))
         )}

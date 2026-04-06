@@ -8,7 +8,6 @@ import {
   IconSearch,
   IconStar,
 } from '../components/icons'
-import '../components/layout/layout.css'
 import { TaskDetailPanel } from '../components/TaskDetailPanel'
 import { useAuth } from '../context/AuthContext'
 import { useModals } from '../context/ModalContext'
@@ -173,7 +172,7 @@ export function ProjectPage() {
 
   if (!projectId || !uid || !project) {
     return (
-      <div style={{ padding: 28, color: 'var(--text-muted)' }}>
+      <div className="p-7 text-muted">
         Loading project…
       </div>
     )
@@ -344,17 +343,19 @@ export function ProjectPage() {
 
   return (
     <>
-      <div className="project-header">
-        <div className="project-title-row">
-          <IconList className="icon-inline" />
+      <div className="px-7 pb-0 pt-5">
+        <div className="mb-1 flex items-center gap-2.5">
+          <IconList className="size-5 text-muted hover:text-fg" />
           <span
-            className="project-dot"
-            style={{ background: project.color, width: 12, height: 12 }}
+            className="h-3 w-3 shrink-0 rounded-[3px]"
+            style={{ background: project.color }}
           />
-          <h1>{project.name}</h1>
+          <h1 className="m-0 text-[22px] font-semibold tracking-tight">
+            {project.name}
+          </h1>
           <button
             type="button"
-            className="icon-inline"
+            className="text-muted hover:text-fg [&_svg]:size-5"
             title="Star project"
             onClick={() =>
               void updateProject(uid, pid, { starred: !project.starred })
@@ -367,17 +368,21 @@ export function ProjectPage() {
               }}
             />
           </button>
-          <button type="button" className="icon-inline" title="Project menu">
+          <button
+            type="button"
+            className="text-muted hover:text-fg [&_svg]:size-5"
+            title="Project menu"
+          >
             <IconChevronDown />
           </button>
         </div>
 
-        <div className="tabs-row">
+        <div className="mt-3 flex items-center gap-1 border-b border-border-subtle">
           {VIEWS.map((v) => (
             <button
               key={v.id}
               type="button"
-              className="tab"
+              className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted transition-colors hover:text-fg data-[active=true]:border-white data-[active=true]:text-fg"
               data-active={activeView === v.id ? 'true' : 'false'}
               onClick={() => goView(v.id)}
             >
@@ -386,7 +391,7 @@ export function ProjectPage() {
           ))}
           <button
             type="button"
-            className="tab"
+            className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted transition-colors hover:text-fg"
             title="More views"
             onClick={() =>
               void alert({
@@ -402,10 +407,10 @@ export function ProjectPage() {
       </div>
 
       {activeView === 'list' || activeView === 'board' ? (
-        <div className="toolbar" ref={popRef} style={{ position: 'relative' }}>
+        <div className="relative flex flex-wrap items-center gap-2 px-7 py-3.5" ref={popRef}>
           <button
             type="button"
-            className="btn-add-task"
+            className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-raised px-3 py-2 text-[13px] font-semibold transition-colors hover:bg-hover-surface"
             onClick={() => {
               const s = sections[0]
               if (s) void onAddTask(s.id)
@@ -415,12 +420,12 @@ export function ProjectPage() {
             Add task
             <IconChevronDown width={14} height={14} />
           </button>
-          <div className="toolbar-spacer" />
-          <div className="toolbar-cluster">
+          <div className="flex-1" />
+          <div className="flex items-center gap-1.5">
             {activeView === 'list' ? (
               <button
                 type="button"
-                className="chip-btn"
+                className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                 data-open={multiSelectMode ? 'true' : 'false'}
                 onClick={() => {
                   setMultiSelectMode((v) => {
@@ -434,7 +439,7 @@ export function ProjectPage() {
             ) : null}
             <button
               type="button"
-              className="chip-btn"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
               data-open={filterOpen === 'filter' ? 'true' : 'false'}
               onClick={() =>
                 setFilterOpen((x) => (x === 'filter' ? null : 'filter'))
@@ -444,7 +449,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="chip-btn"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
               data-open={filterOpen === 'sort' ? 'true' : 'false'}
               onClick={() => setFilterOpen((x) => (x === 'sort' ? null : 'sort'))}
             >
@@ -452,7 +457,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="chip-btn"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
               data-open={filterOpen === 'group' ? 'true' : 'false'}
               onClick={() => setFilterOpen((x) => (x === 'group' ? null : 'group'))}
             >
@@ -460,7 +465,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="chip-btn"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
               data-open={filterOpen === 'options' ? 'true' : 'false'}
               onClick={() =>
                 setFilterOpen((x) => (x === 'options' ? null : 'options'))
@@ -470,7 +475,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="icon-btn"
+              className="grid size-8 place-items-center rounded-card text-muted transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
               title="Search (⌘K)"
               onClick={() =>
                 window.dispatchEvent(new Event('taskora:open-search'))
@@ -481,8 +486,7 @@ export function ProjectPage() {
           </div>
           {filterOpen === 'sort' ? (
             <div
-              className="dropdown"
-              style={{ position: 'absolute', right: 24, top: 56 }}
+              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
             >
               {(
                 [
@@ -492,7 +496,12 @@ export function ProjectPage() {
                   ['name', 'Name'],
                 ] as const
               ).map(([id, lab]) => (
-                <button key={id} type="button" onClick={() => setSort(id)}>
+                <button
+                  key={id}
+                  type="button"
+                  className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                  onClick={() => setSort(id)}
+                >
                   {lab}
                 </button>
               ))}
@@ -500,8 +509,7 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'group' ? (
             <div
-              className="dropdown"
-              style={{ position: 'absolute', right: 24, top: 56 }}
+              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
             >
               {(
                 [
@@ -512,7 +520,12 @@ export function ProjectPage() {
                   ['priority', 'Priority'],
                 ] as const
               ).map(([id, lab]) => (
-                <button key={id} type="button" onClick={() => setGroup(id)}>
+                <button
+                  key={id}
+                  type="button"
+                  className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                  onClick={() => setGroup(id)}
+                >
                   {lab}
                 </button>
               ))}
@@ -520,18 +533,14 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'filter' ? (
             <div
-              className="dropdown"
-              style={{
-                position: 'absolute',
-                right: 120,
-                top: 56,
-                minWidth: 260,
-              }}
+              className="absolute right-[120px] top-14 z-50 mt-1.5 min-w-[260px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
             >
-              <div className="filter-dropdown-section">Status</div>
+              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+                Status
+              </div>
               <button
                 type="button"
-                className="filter-option"
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
                 data-active={filterStatus === 'all' ? 'true' : 'false'}
                 onClick={() => setFilterStatus('all')}
               >
@@ -541,14 +550,16 @@ export function ProjectPage() {
                 <button
                   key={s.id}
                   type="button"
-                  className="filter-option"
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
                   data-active={filterStatus === s.id ? 'true' : 'false'}
                   onClick={() => setFilterStatus(s.id)}
                 >
                   {s.name}
                 </button>
               ))}
-              <div className="filter-dropdown-section">Assignee</div>
+              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+                Assignee
+              </div>
               {(
                 [
                   ['all', 'Everyone'],
@@ -559,17 +570,19 @@ export function ProjectPage() {
                 <button
                   key={id}
                   type="button"
-                  className="filter-option"
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
                   data-active={filterAssignee === id ? 'true' : 'false'}
                   onClick={() => setFilterAssignee(id)}
                 >
                   {lab}
                 </button>
               ))}
-              <div className="filter-dropdown-section">Visibility</div>
+              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+                Visibility
+              </div>
               <button
                 type="button"
-                className="filter-option"
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
                 data-active={filterHideCompleted ? 'true' : 'false'}
                 onClick={() => setFilterHideCompleted((x) => !x)}
               >
@@ -580,11 +593,11 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'options' ? (
             <div
-              className="dropdown"
-              style={{ position: 'absolute', right: 24, top: 56, minWidth: 240 }}
+              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[240px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
             >
               <button
                 type="button"
+                className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
                 onClick={() => {
                   setFilterOpen(null)
                   void alert({
@@ -598,6 +611,7 @@ export function ProjectPage() {
               </button>
               <button
                 type="button"
+                className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
                 onClick={() => {
                   setFilterOpen(null)
                   void alert({
@@ -614,29 +628,49 @@ export function ProjectPage() {
       ) : null}
 
       {activeView === 'list' && multiSelectMode && selectedIds.size > 0 ? (
-        <div className="bulk-action-bar">
-          <span className="bulk-count">{selectedIds.size} selected</span>
-          <button type="button" onClick={() => void runBulkComplete(true)}>
+        <div className="mx-7 mb-3 flex flex-wrap items-center gap-2.5 rounded-modal border border-border bg-row-hover px-3.5 py-2.5 text-[13px]">
+          <span className="mr-1 font-bold">{selectedIds.size} selected</span>
+          <button
+            type="button"
+            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            onClick={() => void runBulkComplete(true)}
+          >
             Mark complete
           </button>
-          <button type="button" onClick={() => void runBulkComplete(false)}>
+          <button
+            type="button"
+            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            onClick={() => void runBulkComplete(false)}
+          >
             Mark incomplete
           </button>
-          <button type="button" onClick={() => void runBulkAssign(true)}>
+          <button
+            type="button"
+            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            onClick={() => void runBulkAssign(true)}
+          >
             Assign to me
           </button>
-          <button type="button" onClick={() => void runBulkAssign(false)}>
+          <button
+            type="button"
+            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            onClick={() => void runBulkAssign(false)}
+          >
             Unassign
           </button>
           <button
             type="button"
-            className="bulk-danger"
+            className="rounded-pill border border-[rgba(196,76,92,0.5)] bg-raised px-3 py-1.5 text-xs font-semibold text-[#f0a8b3] transition-colors hover:bg-[rgba(196,76,92,0.15)]"
             onClick={() => void runBulkDelete()}
           >
             Delete…
           </button>
-          <div style={{ flex: 1 }} />
-          <button type="button" onClick={() => setSelectedIds(new Set())}>
+          <div className="flex-1" />
+          <button
+            type="button"
+            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            onClick={() => setSelectedIds(new Set())}
+          >
             Clear selection
           </button>
         </div>
@@ -710,7 +744,7 @@ export function ProjectPage() {
 
       <button
         type="button"
-        className="add-section-btn"
+        className="mx-7 mb-8 mt-[18px] inline-flex items-center gap-1.5 py-2 text-[13px] font-semibold text-muted transition-colors hover:text-fg"
         onClick={() => void onAddSection()}
       >
         <IconPlus width={16} height={16} />

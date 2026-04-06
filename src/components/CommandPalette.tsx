@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { subscribeProjects } from '../services/db'
 import type { ProjectDoc } from '../types/models'
 import { IconList, IconSearch } from './icons'
-import './layout/layout.css'
 
 type Props = { open: boolean; onClose: () => void }
 
@@ -114,18 +113,18 @@ export function CommandPalette({ open, onClose }: Props) {
   if (!open) return null
 
   return (
-    <div className="modal" role="dialog" aria-modal="true" aria-label="Search">
+    <div className="fixed inset-0 z-[200] grid place-items-center p-6" role="dialog" aria-modal="true" aria-label="Search">
       <button
         type="button"
-        className="panel-backdrop"
+        className="fixed inset-0 z-[90] cursor-default border-none bg-black/45 p-0"
         aria-label="Close"
         onClick={resetAndClose}
-        style={{ border: 'none', padding: 0, cursor: 'default' }}
       />
-      <div className="modal-card">
-        <div className="modal-header">
+      <div className="relative z-[100] w-full max-w-[720px] overflow-hidden rounded-[10px] border border-border bg-raised shadow-popover">
+        <div className="flex items-center gap-2.5 border-b border-border-subtle px-4 py-3.5">
           <IconSearch width={18} height={18} />
           <input
+            className="min-w-0 flex-1 border-none bg-transparent text-base font-semibold outline-none"
             autoFocus
             placeholder="Jump to project, view, or page…"
             value={q}
@@ -135,24 +134,24 @@ export function CommandPalette({ open, onClose }: Props) {
             }}
           />
         </div>
-        <div className="modal-body">
+        <div className="max-h-[min(560px,70vh)] overflow-auto p-2">
           {items.length === 0 ? (
-            <div style={{ padding: 12, color: 'var(--text-muted)' }}>
-              No matches.
-            </div>
+            <div className="p-3 text-muted">No matches.</div>
           ) : (
             items.map((it, idx) => (
               <button
                 key={it.id}
                 type="button"
-                className="command-row"
+                className="flex w-full items-center gap-2.5 rounded-card px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-hover-surface data-[active=true]:bg-hover-surface"
                 data-active={idx === active ? 'true' : 'false'}
                 onMouseEnter={() => setActive(idx)}
                 onClick={() => it.run()}
               >
                 <IconList width={16} height={16} />
                 <span>{it.label}</span>
-                {it.meta ? <span className="command-meta">{it.meta}</span> : null}
+                {it.meta ? (
+                  <span className="ml-auto text-[11px] text-muted">{it.meta}</span>
+                ) : null}
               </button>
             ))
           )}

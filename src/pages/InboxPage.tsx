@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import '../components/layout/layout.css'
 import { TaskDetailPanel } from '../components/TaskDetailPanel'
 import { useAuth } from '../context/AuthContext'
 import { useAggregatedTasks } from '../hooks/useAggregatedTasks'
@@ -10,12 +9,7 @@ export function InboxPage() {
   const uid = user?.uid ?? ''
   const { rows, byProject } = useAggregatedTasks(uid)
   const inbox = useMemo(
-    () =>
-      rows.filter(
-        (r) =>
-          r.task.approvalStatus === 'pending' ||
-          r.task.status === 'blocked',
-      ),
+    () => rows.filter((r) => r.task.approvalStatus === 'pending'),
     [rows],
   )
   const [selected, setSelected] = useState<{
@@ -26,19 +20,19 @@ export function InboxPage() {
   return (
     <div style={{ padding: '28px 32px 48px' }}>
       <h1 style={{ margin: '0 0 8px', fontSize: 26 }}>Inbox</h1>
-      <p style={{ margin: 0, color: 'var(--text-muted)', maxWidth: 720 }}>
+      <p className="m-0 max-w-[720px] text-muted">
         Surfaces items needing attention — approvals (Asana Advanced) and blocked tasks. Extend with comment @mentions using the same task activity model.
       </p>
       <div
         style={{
           marginTop: 18,
-          border: '1px solid var(--border-subtle)',
+          border: '1px solid var(--color-border-subtle)',
           borderRadius: 10,
           overflow: 'hidden',
         }}
       >
         {inbox.length === 0 ? (
-          <div style={{ padding: 18, color: 'var(--text-muted)' }}>
+          <div className="p-[18px] text-muted">
             You&apos;re all caught up. Mark a task as &quot;Pending approval&quot; to see it land here.
           </div>
         ) : (
@@ -51,12 +45,12 @@ export function InboxPage() {
                 width: '100%',
                 textAlign: 'left',
                 padding: '12px 14px',
-                borderBottom: '1px solid var(--border-subtle)',
+                borderBottom: '1px solid var(--color-border-subtle)',
                 background: 'transparent',
               }}
             >
               <div style={{ fontWeight: 700 }}>{t.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              <div className="mt-1 text-xs text-muted">
                 {project.name} ·{' '}
                 {t.approvalStatus === 'pending' ? 'Needs approval' : 'Blocked'}
               </div>
