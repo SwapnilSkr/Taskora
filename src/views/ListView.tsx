@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { IconCalendar, IconUser } from '../components/icons'
 import '../components/layout/layout.css'
 import type { SectionDoc, TaskDoc } from '../types/models'
@@ -13,6 +13,9 @@ type Props = {
   group: GroupMode
   sort: SortMode
   uid: string
+  selectedIds: Set<string>
+  onToggleSelect: (taskId: string) => void
+  onSetManySelected: (taskIds: string[], selected: boolean) => void
   onTaskClick: (t: TaskDoc) => void
   onToggleComplete: (t: TaskDoc) => void
   onAddTask: (sectionId: string) => void
@@ -71,12 +74,46 @@ function sortTasks(list: TaskDoc[], mode: SortMode): TaskDoc[] {
   return out
 }
 
+function GroupSelectCheckbox({
+  taskIds,
+  selectedIds,
+  onSetManySelected,
+}: {
+  taskIds: string[]
+  selectedIds: Set<string>
+  onSetManySelected: (ids: string[], selected: boolean) => void
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  const picked = taskIds.filter((id) => selectedIds.has(id)).length
+  const all = taskIds.length > 0 && picked === taskIds.length
+  const some = picked > 0 && !all
+
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = some
+  }, [some])
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      className="select-checkbox"
+      title="Select group"
+      checked={all}
+      onChange={() => onSetManySelected(taskIds, !all)}
+      onClick={(e) => e.stopPropagation()}
+    />
+  )
+}
+
 export function ListView({
   sections,
   tasks,
   group,
   sort,
   uid,
+  selectedIds,
+  onToggleSelect,
+  onSetManySelected,
   onTaskClick,
   onToggleComplete,
   onAddTask,
@@ -90,9 +127,19 @@ export function ListView({
             roots.filter((t) => t.sectionId === s.id),
             sort,
           )
+          const ids = rowTasks.map((t) => t.id)
           return (
             <Fragment key={s.id}>
               <tr className="section-label-row">
+                <td style={{ width: 40, verticalAlign: 'middle' }}>
+                  {ids.length > 0 ? (
+                    <GroupSelectCheckbox
+                      taskIds={ids}
+                      selectedIds={selectedIds}
+                      onSetManySelected={onSetManySelected}
+                    />
+                  ) : null}
+                </td>
                 <td colSpan={4}>
                   {s.name}
                   <button
@@ -111,6 +158,8 @@ export function ListView({
                   task={t}
                   subtasks={tasks.filter((x) => x.parentTaskId === t.id)}
                   uid={uid}
+                  selectedIds={selectedIds}
+                  onToggleSelect={onToggleSelect}
                   onTaskClick={onTaskClick}
                   onToggleComplete={onToggleComplete}
                 />
@@ -119,30 +168,45 @@ export function ListView({
           )
         })
       : (() => {
-          const groups = new Map<string, TaskDoc[]>()
+          const gmap = new Map<string, TaskDoc[]>()
           for (const t of roots) {
             const k = groupKey(t, group, sections, uid)
-            const arr = groups.get(k) ?? []
+            const arr = gmap.get(k) ?? []
             arr.push(t)
-            groups.set(k, arr)
+            gmap.set(k, arr)
           }
-          return Array.from(groups.entries()).map(([key, rowTasks]) => (
-            <Fragment key={key}>
-              <tr className="section-label-row">
-                <td colSpan={4}>{key}</td>
-              </tr>
-              {sortTasks(rowTasks, sort).map((t) => (
-                <TaskRow
-                  key={t.id}
-                  task={t}
-                  subtasks={tasks.filter((x) => x.parentTaskId === t.id)}
-                  uid={uid}
-                  onTaskClick={onTaskClick}
-                  onToggleComplete={onToggleComplete}
-                />
-              ))}
-            </Fragment>
-          ))
+          return Array.from(gmap.entries()).map(([key, rowTasks]) => {
+            const sorted = sortTasks(rowTasks, sort)
+            const ids = sorted.map((t) => t.id)
+            return (
+              <Fragment key={key}>
+                <tr className="section-label-row">
+                  <td style={{ width: 40, verticalAlign: 'middle' }}>
+                    {ids.length > 0 ? (
+                      <GroupSelectCheckbox
+                        taskIds={ids}
+                        selectedIds={selectedIds}
+                        onSetManySelected={onSetManySelected}
+                      />
+                    ) : null}
+                  </td>
+                  <td colSpan={4}>{key}</td>
+                </tr>
+                {sorted.map((t) => (
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    subtasks={tasks.filter((x) => x.parentTaskId === t.id)}
+                    uid={uid}
+                    selectedIds={selectedIds}
+                    onToggleSelect={onToggleSelect}
+                    onTaskClick={onTaskClick}
+                    onToggleComplete={onToggleComplete}
+                  />
+                ))}
+              </Fragment>
+            )
+          })
         })()
 
   return (
@@ -150,7 +214,8 @@ export function ListView({
       <table className="task-table">
         <thead>
           <tr>
-            <th style={{ width: '46%' }}>Name</th>
+            <th style={{ width: 40 }} aria-label="Select" />
+            <th style={{ width: '42%' }}>Name</th>
             <th style={{ width: '18%' }}>Assignee</th>
             <th style={{ width: '18%' }}>Due date</th>
             <th style={{ width: '18%' }}>Priority</th>
@@ -166,12 +231,16 @@ function TaskRow({
   task: t,
   subtasks,
   uid,
+  selectedIds,
+  onToggleSelect,
   onTaskClick,
   onToggleComplete,
 }: {
   task: TaskDoc
   subtasks: TaskDoc[]
   uid: string
+  selectedIds: Set<string>
+  onToggleSelect: (taskId: string) => void
   onTaskClick: (t: TaskDoc) => void
   onToggleComplete: (t: TaskDoc) => void
 }) {
@@ -183,13 +252,26 @@ function TaskRow({
   return (
     <>
       <tr className="task-row">
+        <td
+          onClick={(e) => e.stopPropagation()}
+          style={{ verticalAlign: 'middle' }}
+        >
+          <input
+            type="checkbox"
+            className="select-checkbox"
+            title="Select task"
+            checked={selectedIds.has(t.id)}
+            onChange={() => onToggleSelect(t.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </td>
         <td onClick={() => onTaskClick(t)} style={{ cursor: 'pointer' }}>
           <div className="task-title-cell">
             <button
               type="button"
               className="checkbox"
               data-done={t.completed ? 'true' : 'false'}
-              title="Complete"
+              title="Mark complete"
               onClick={(e) => {
                 e.stopPropagation()
                 onToggleComplete(t)
@@ -218,6 +300,19 @@ function TaskRow({
       </tr>
       {subtasks.map((st) => (
         <tr key={st.id} className="task-row">
+          <td
+            onClick={(e) => e.stopPropagation()}
+            style={{ verticalAlign: 'middle' }}
+          >
+            <input
+              type="checkbox"
+              className="select-checkbox"
+              title="Select subtask"
+              checked={selectedIds.has(st.id)}
+              onChange={() => onToggleSelect(st.id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </td>
           <td
             className="subtask-indent"
             onClick={() => onTaskClick(st)}

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ModalProvider } from './context/ModalContext'
 import { HomePage } from './pages/HomePage'
 import { InboxPage } from './pages/InboxPage'
 import { LoginPage } from './pages/LoginPage'
@@ -23,6 +24,7 @@ function Protected({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ModalProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
@@ -42,6 +44,7 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ModalProvider>
     </AuthProvider>
   )
 }

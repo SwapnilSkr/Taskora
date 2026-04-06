@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useModals } from '../../context/ModalContext'
 import { createProject, subscribeProjects } from '../../services/db'
 import type { ProjectDoc } from '../../types/models'
 import {
@@ -19,6 +20,7 @@ import './layout.css'
 
 export function Sidebar() {
   const { user, logout } = useAuth()
+  const { prompt } = useModals()
   const nav = useNavigate()
   const loc = useLocation()
   const [projects, setProjects] = useState<ProjectDoc[]>([])
@@ -32,7 +34,13 @@ export function Sidebar() {
 
   async function onCreateProject() {
     if (!user) return
-    const name = window.prompt('Project name', 'New project')
+    const name = await prompt({
+      title: 'Create project',
+      message: 'Give your project a clear name. You can add sections and tasks next.',
+      label: 'Project name',
+      defaultValue: 'New project',
+      confirmLabel: 'Create',
+    })
     if (!name?.trim()) return
     const id = await createProject(user.uid, name.trim())
     nav(`/project/${id}/list`)

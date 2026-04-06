@@ -877,3 +877,214 @@
 .dropdown button:hover {
   background: var(--bg-hover);
 }
+
+/* App dialogs (replace window.alert / confirm / prompt) */
+.app-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+}
+.app-modal-root > * {
+  pointer-events: auto;
+}
+.app-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  padding: 0;
+  cursor: default;
+  z-index: 0;
+}
+.app-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  max-height: min(80vh, 560px);
+  overflow: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 22px 18px;
+  box-shadow: var(--shadow-popover);
+}
+.app-modal-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.app-modal-body {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.app-modal-body-tight {
+  margin-bottom: 10px;
+}
+.app-modal-input {
+  margin-bottom: 18px;
+}
+.app-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.app-modal-actions .btn-primary,
+.app-modal-actions .btn-ghost {
+  flex: 0 0 auto;
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+}
+.app-modal-actions .btn-ghost {
+  border: 1px solid var(--border);
+}
+.btn-danger {
+  background: #c44c5c !important;
+}
+.btn-danger:hover {
+  background: #d85c6c !important;
+}
+
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 28px 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #232426;
+  font-size: 13px;
+}
+.bulk-action-bar .bulk-count {
+  font-weight: 700;
+  margin-right: 4px;
+}
+.bulk-action-bar button {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 12px;
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+.bulk-action-bar button:hover {
+  background: var(--bg-hover);
+}
+.bulk-action-bar button.bulk-danger {
+  border-color: rgba(196, 76, 92, 0.5);
+  color: #f0a8b3;
+}
+.bulk-action-bar button.bulk-danger:hover {
+  background: rgba(196, 76, 92, 0.15);
+}
+
+.select-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid #6f7177;
+  background: var(--bg-app);
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent-share);
+}
+
+.filter-dropdown-section {
+  padding: 6px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.filter-option {
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.filter-option[data-active='true'] {
+  background: var(--bg-hover);
+  font-weight: 600;
+}
+
+.gantt-scroll {
+  overflow-x: auto;
+  margin: 0 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: #1b1c1f;
+}
+.gantt-grid {
+  min-width: 720px;
+}
+.gantt-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(224, 109, 94, 0.85);
+  z-index: 2;
+  pointer-events: none;
+}
+.gantt-row-label {
+  font-weight: 600;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gantt-row-label button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.gantt-row-label button:hover {
+  color: var(--accent-share);
+}
+.gantt-bar-wrap {
+  position: relative;
+  height: 32px;
+  border-left: 1px solid var(--border-subtle);
+}
+.gantt-bar {
+  position: absolute;
+  height: 22px;
+  top: 5px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #4573d2, #7c5cff);
+  opacity: 0.92;
+  cursor: pointer;
+  min-width: 8px;
+}
+.gantt-bar:hover {
+  opacity: 1;
+  filter: brightness(1.08);
+}
+.gantt-row-muted {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}

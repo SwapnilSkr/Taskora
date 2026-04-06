@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   IconChevronDown,
@@ -10,8 +10,12 @@ import {
 import '../components/layout/layout.css'
 import { TaskDetailPanel } from '../components/TaskDetailPanel'
 import { useAuth } from '../context/AuthContext'
+import { useModals } from '../context/ModalContext'
 import {
   addSection,
+  bulkDeleteTasks,
+  bulkSetAssignee,
+  bulkSetTasksCompleted,
   createTask,
   subscribeProjects,
   subscribeSections,
@@ -19,15 +23,20 @@ import {
   updateProject,
   updateTask,
 } from '../services/db'
-import type { ProjectDoc, ProjectView, SectionDoc, TaskDoc } from '../types/models'
+import type {
+  ProjectDoc,
+  ProjectView,
+  SectionDoc,
+  TaskDoc,
+} from '../types/models'
 import { BoardView } from '../views/BoardView'
+import { DashboardView } from '../views/DashboardView'
+import { GanttView } from '../views/GanttView'
 import {
   ListView,
   type GroupMode,
   type SortMode,
 } from '../views/ListView'
-import { DashboardView } from '../views/DashboardView'
-import { GanttView } from '../views/GanttView'
 import { OverviewView } from '../views/OverviewView'
 import { TimelineViewTimeline } from '../views/TimelineView'
 import { WorkloadView } from '../views/WorkloadView'
@@ -42,6 +51,9 @@ const VIEWS: { id: ProjectView; label: string }[] = [
   { id: 'workload', label: 'Workload' },
 ]
 
+type StatusFilter = 'all' | TaskDoc['status']
+type AssigneeFilter = 'all' | 'me' | 'unassigned'
+
 export function ProjectPage() {
   const { projectId, view } = useParams<{
     projectId: string
@@ -49,17 +61,22 @@ export function ProjectPage() {
   }>()
   const nav = useNavigate()
   const { user } = useAuth()
+  const { confirm, prompt, alert } = useModals()
   const uid = user?.uid ?? ''
 
   const [projects, setProjects] = useState<ProjectDoc[]>([])
   const [sections, setSections] = useState<SectionDoc[]>([])
   const [tasks, setTasks] = useState<TaskDoc[]>([])
   const [selected, setSelected] = useState<TaskDoc | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [group, setGroup] = useState<GroupMode>('section')
   const [sort, setSort] = useState<SortMode>('sortOrder')
-  const [filterOpen, setFilterOpen] = useState<'filter' | 'sort' | 'group' | null>(
-    null,
-  )
+  const [filterOpen, setFilterOpen] = useState<
+    'filter' | 'sort' | 'group' | 'options' | null
+  >(null)
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>('all')
+  const [filterAssignee, setFilterAssignee] = useState<AssigneeFilter>('all')
+  const [filterHideCompleted, setFilterHideCompleted] = useState(false)
   const popRef = useRef<HTMLDivElement | null>(null)
 
   const activeView: ProjectView =
@@ -99,6 +116,45 @@ export function ProjectPage() {
     if (projects.length > 0 && !project) nav('/home', { replace: true })
   }, [project, projectId, projects, nav, uid])
 
+  const lastProjectId = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!projectId) return
+    if (lastProjectId.current === projectId) return
+    lastProjectId.current = projectId
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear bulk selection when opening another project
+    setSelectedIds(new Set())
+  }, [projectId])
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (filterHideCompleted && t.completed) return false
+      if (filterStatus !== 'all' && t.status !== filterStatus) return false
+      if (filterAssignee === 'me' && t.assigneeId !== uid) return false
+      if (filterAssignee === 'unassigned' && t.assigneeId) return false
+      return true
+    })
+  }, [tasks, filterHideCompleted, filterStatus, filterAssignee, uid])
+
+  const toggleSelect = useCallback((taskId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(taskId)) next.delete(taskId)
+      else next.add(taskId)
+      return next
+    })
+  }, [])
+
+  const setManySelected = useCallback((taskIds: string[], selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      for (const id of taskIds) {
+        if (selected) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+  }, [])
+
   if (!projectId || !uid || !project) {
     return (
       <div style={{ padding: 28, color: 'var(--text-muted)' }}>
@@ -109,10 +165,15 @@ export function ProjectPage() {
 
   const pid = projectId
 
-  const filteredTasks = tasks
-
   async function onAddTask(sectionId: string) {
-    const title = window.prompt('Task name', 'New task')
+    const title = await prompt({
+      title: 'New task',
+      message: 'Name this task — it will appear in the selected section.',
+      label: 'Task name',
+      defaultValue: 'New task',
+      placeholder: 'e.g. Ship analytics dashboard',
+      confirmLabel: 'Create',
+    })
     if (!title?.trim()) return
     const inSec = tasks.filter((t) => t.sectionId === sectionId && !t.parentTaskId)
     const sortOrder =
@@ -125,13 +186,45 @@ export function ProjectPage() {
   }
 
   async function onAddSection() {
-    const name = window.prompt('Section name', 'New section')
+    const name = await prompt({
+      title: 'New section',
+      message: 'Sections group tasks in the list and board.',
+      label: 'Section name',
+      defaultValue: 'New section',
+      confirmLabel: 'Add section',
+    })
     if (!name?.trim()) return
     await addSection(uid, pid, name.trim(), sections.length)
   }
 
   function goView(v: ProjectView) {
+    if (v !== activeView) setSelectedIds(new Set())
     nav(`/project/${pid}/${v}`)
+  }
+
+  async function runBulkDelete() {
+    const n = selectedIds.size
+    if (n === 0) return
+    const ok = await confirm({
+      title: 'Delete tasks',
+      message: `Permanently delete ${n} task(s) and their subtasks, comments, and file links? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    })
+    if (!ok) return
+    await bulkDeleteTasks(uid, pid, [...selectedIds], tasks)
+    setSelectedIds(new Set())
+    setSelected(null)
+  }
+
+  async function runBulkComplete(completed: boolean) {
+    if (selectedIds.size === 0) return
+    await bulkSetTasksCompleted(uid, pid, [...selectedIds], completed)
+  }
+
+  async function runBulkAssign(toMe: boolean) {
+    if (selectedIds.size === 0) return
+    await bulkSetAssignee(uid, pid, [...selectedIds], toMe ? uid : null)
   }
 
   return (
@@ -176,7 +269,18 @@ export function ProjectPage() {
               {v.label}
             </button>
           ))}
-          <button type="button" className="tab" title="Add tab">
+          <button
+            type="button"
+            className="tab"
+            title="More views"
+            onClick={() =>
+              void alert({
+                title: 'More views',
+                message:
+                  'Custom views and saved filters are on the roadmap. For now use List, Board, Timeline, Gantt, Dashboard, and Workload.',
+              })
+            }
+          >
             <IconPlus width={16} height={16} />
           </button>
         </div>
@@ -224,15 +328,32 @@ export function ProjectPage() {
             >
               Group
             </button>
-            <button type="button" className="chip-btn">
+            <button
+              type="button"
+              className="chip-btn"
+              data-open={filterOpen === 'options' ? 'true' : 'false'}
+              onClick={() =>
+                setFilterOpen((x) => (x === 'options' ? null : 'options'))
+              }
+            >
               Options
             </button>
-            <button type="button" className="icon-btn" title="Search in project">
+            <button
+              type="button"
+              className="icon-btn"
+              title="Search (⌘K)"
+              onClick={() =>
+                window.dispatchEvent(new Event('taskora:open-search'))
+              }
+            >
               <IconSearch />
             </button>
           </div>
           {filterOpen === 'sort' ? (
-            <div className="dropdown" style={{ position: 'absolute', right: 24, top: 152 }}>
+            <div
+              className="dropdown"
+              style={{ position: 'absolute', right: 24, top: 56 }}
+            >
               {(
                 [
                   ['sortOrder', 'Manual / list order'],
@@ -248,7 +369,10 @@ export function ProjectPage() {
             </div>
           ) : null}
           {filterOpen === 'group' ? (
-            <div className="dropdown" style={{ position: 'absolute', right: 24, top: 152 }}>
+            <div
+              className="dropdown"
+              style={{ position: 'absolute', right: 24, top: 56 }}
+            >
               {(
                 [
                   ['section', 'Section'],
@@ -265,12 +389,126 @@ export function ProjectPage() {
             </div>
           ) : null}
           {filterOpen === 'filter' ? (
-            <div className="dropdown" style={{ position: 'absolute', right: 120, top: 152, minWidth: 260 }}>
-              <div style={{ padding: '6px 8px', color: 'var(--text-muted)', fontSize: 12 }}>
-                Pro-style filters (status, assignee, tags) apply on top of the current view. Use List and mark tasks complete to see them roll up in Dashboard.
-              </div>
+            <div
+              className="dropdown"
+              style={{
+                position: 'absolute',
+                right: 120,
+                top: 56,
+                minWidth: 260,
+              }}
+            >
+              <div className="filter-dropdown-section">Status</div>
+              {(
+                [
+                  ['all', 'All statuses'],
+                  ['not_started', 'Not started'],
+                  ['in_progress', 'In progress'],
+                  ['completed', 'Completed'],
+                  ['blocked', 'Blocked'],
+                ] as const
+              ).map(([id, lab]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className="filter-option"
+                  data-active={filterStatus === id ? 'true' : 'false'}
+                  onClick={() => setFilterStatus(id)}
+                >
+                  {lab}
+                </button>
+              ))}
+              <div className="filter-dropdown-section">Assignee</div>
+              {(
+                [
+                  ['all', 'Everyone'],
+                  ['me', 'Assigned to me'],
+                  ['unassigned', 'Unassigned'],
+                ] as const
+              ).map(([id, lab]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className="filter-option"
+                  data-active={filterAssignee === id ? 'true' : 'false'}
+                  onClick={() => setFilterAssignee(id)}
+                >
+                  {lab}
+                </button>
+              ))}
+              <div className="filter-dropdown-section">Visibility</div>
+              <button
+                type="button"
+                className="filter-option"
+                data-active={filterHideCompleted ? 'true' : 'false'}
+                onClick={() => setFilterHideCompleted((x) => !x)}
+              >
+                Hide completed
+                <span style={{ opacity: 0.7 }}>{filterHideCompleted ? 'On' : 'Off'}</span>
+              </button>
             </div>
           ) : null}
+          {filterOpen === 'options' ? (
+            <div
+              className="dropdown"
+              style={{ position: 'absolute', right: 24, top: 56, minWidth: 240 }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterOpen(null)
+                  void alert({
+                    title: 'Project shortcuts',
+                    message:
+                      '⌘K (Ctrl+K): Search and jump. In List: use row checkboxes to select tasks, then use the bulk bar for complete, assign, or delete.',
+                  })
+                }}
+              >
+                Keyboard shortcuts
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterOpen(null)
+                  void alert({
+                    title: 'About this project',
+                    message: `${project.name}: data is stored in your Firebase project under your account. Export and automations can be added later.`,
+                  })
+                }}
+              >
+                About this project
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {activeView === 'list' && selectedIds.size > 0 ? (
+        <div className="bulk-action-bar">
+          <span className="bulk-count">{selectedIds.size} selected</span>
+          <button type="button" onClick={() => void runBulkComplete(true)}>
+            Mark complete
+          </button>
+          <button type="button" onClick={() => void runBulkComplete(false)}>
+            Mark incomplete
+          </button>
+          <button type="button" onClick={() => void runBulkAssign(true)}>
+            Assign to me
+          </button>
+          <button type="button" onClick={() => void runBulkAssign(false)}>
+            Unassign
+          </button>
+          <button
+            type="button"
+            className="bulk-danger"
+            onClick={() => void runBulkDelete()}
+          >
+            Delete…
+          </button>
+          <div style={{ flex: 1 }} />
+          <button type="button" onClick={() => setSelectedIds(new Set())}>
+            Clear selection
+          </button>
         </div>
       ) : null}
 
@@ -284,6 +522,9 @@ export function ProjectPage() {
           group={group}
           sort={sort}
           uid={uid}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onSetManySelected={setManySelected}
           onTaskClick={setSelected}
           onToggleComplete={(t) =>
             void updateTask(uid, pid, t.id, {
@@ -304,19 +545,27 @@ export function ProjectPage() {
         />
       ) : null}
       {activeView === 'timeline' ? (
-        <TimelineViewTimeline tasks={filteredTasks} sections={sections} />
+        <TimelineViewTimeline
+          tasks={filteredTasks}
+          sections={sections}
+          onTaskClick={setSelected}
+        />
       ) : null}
       {activeView === 'dashboard' ? (
         <DashboardView tasks={filteredTasks} />
       ) : null}
       {activeView === 'gantt' ? (
-        <GanttView tasks={filteredTasks} />
+        <GanttView tasks={filteredTasks} onTaskClick={setSelected} />
       ) : null}
       {activeView === 'workload' ? (
         <WorkloadView tasks={filteredTasks} uid={uid} />
       ) : null}
 
-      <button type="button" className="add-section-btn" onClick={() => void onAddSection()}>
+      <button
+        type="button"
+        className="add-section-btn"
+        onClick={() => void onAddSection()}
+      >
         <IconPlus width={16} height={16} />
         Add section
       </button>

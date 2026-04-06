@@ -21,6 +21,14 @@ export function AppLayout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  useEffect(() => {
+    function onGlobalSearch() {
+      setSearchOpen(true)
+    }
+    window.addEventListener('taskora:open-search', onGlobalSearch)
+    return () => window.removeEventListener('taskora:open-search', onGlobalSearch)
+  }, [])
+
   return (
     <div className="app-shell">
       <Sidebar />

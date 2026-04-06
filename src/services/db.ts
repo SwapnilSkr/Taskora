@@ -9,12 +9,14 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
   setDoc,
   updateDoc,
   writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore'
-import { getDb } from '../lib/firebase'
+import { getDb, getFirebaseStorage } from '../lib/firebase'
+import { deleteObject, ref as storageRef } from 'firebase/storage'
 import type {
   AttachmentMeta,
   CommentDoc,
@@ -349,7 +351,7 @@ export async function updateTask(
   await updateDoc(taskRef(uid, projectId, taskId), cleaned)
 }
 
-export async function deleteTask(
+async function deleteTaskLeaf(
   uid: string,
   projectId: string,
   taskId: string,
@@ -358,9 +360,105 @@ export async function deleteTask(
   const batch = writeBatch(getDb())
   cs.docs.forEach((d) => batch.delete(d.ref))
   const as = await getDocs(attachmentsCol(uid, projectId, taskId))
-  as.docs.forEach((d) => batch.delete(d.ref))
+  const bucket = getFirebaseStorage()
+  for (const d of as.docs) {
+    const path = (d.data() as { storagePath?: string }).storagePath
+    if (path) {
+      try {
+        await deleteObject(storageRef(bucket, path))
+      } catch {
+        /* file already removed */
+      }
+    }
+    batch.delete(d.ref)
+  }
   batch.delete(taskRef(uid, projectId, taskId))
   await batch.commit()
+}
+
+/** Deletes task, nested subtasks, comments, and attachment docs. */
+export async function deleteTask(
+  uid: string,
+  projectId: string,
+  taskId: string,
+): Promise<void> {
+  const kidQ = query(tasksCol(uid, projectId), where('parentTaskId', '==', taskId))
+  const kids = await getDocs(kidQ)
+  for (const d of kids.docs) {
+    await deleteTask(uid, projectId, d.id)
+  }
+  await deleteTaskLeaf(uid, projectId, taskId)
+  await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
+}
+
+/** Deletes selected tasks; avoids double-deleting when parent and child are both selected. */
+export async function bulkDeleteTasks(
+  uid: string,
+  projectId: string,
+  taskIds: string[],
+  allTasks: TaskDoc[],
+): Promise<void> {
+  const sel = new Set(taskIds)
+  const roots = taskIds.filter((id) => {
+    const t = allTasks.find((x) => x.id === id)
+    if (!t?.parentTaskId) return true
+    return !sel.has(t.parentTaskId)
+  })
+  for (const id of roots) {
+    await deleteTask(uid, projectId, id)
+  }
+}
+
+const BATCH_LIMIT = 450
+
+export async function bulkSetTasksCompleted(
+  uid: string,
+  projectId: string,
+  taskIds: string[],
+  completed: boolean,
+): Promise<void> {
+  let batch = writeBatch(getDb())
+  let n = 0
+  for (const id of taskIds) {
+    const patch: Record<string, unknown> = {
+      completed,
+      status: completed ? 'completed' : 'not_started',
+      completedAt: completed ? ts() : null,
+      updatedAt: ts(),
+    }
+    batch.update(taskRef(uid, projectId, id), patch)
+    n++
+    if (n >= BATCH_LIMIT) {
+      await batch.commit()
+      batch = writeBatch(getDb())
+      n = 0
+    }
+  }
+  if (n > 0) await batch.commit()
+  await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
+}
+
+export async function bulkSetAssignee(
+  uid: string,
+  projectId: string,
+  taskIds: string[],
+  assigneeId: string | null,
+): Promise<void> {
+  let batch = writeBatch(getDb())
+  let n = 0
+  for (const id of taskIds) {
+    batch.update(taskRef(uid, projectId, id), {
+      assigneeId,
+      updatedAt: ts(),
+    })
+    n++
+    if (n >= BATCH_LIMIT) {
+      await batch.commit()
+      batch = writeBatch(getDb())
+      n = 0
+    }
+  }
+  if (n > 0) await batch.commit()
   await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
 }
 

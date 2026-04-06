@@ -1,6 +1,7 @@
 import { Timestamp } from 'firebase/firestore'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useModals } from '../context/ModalContext'
 import {
   addComment,
   createTask,
@@ -47,6 +48,7 @@ export function TaskDetailPanel({
   onSaved,
 }: Props) {
   const { user } = useAuth()
+  const { confirm, prompt } = useModals()
   const [tab, setTab] = useState<'details' | 'subtasks' | 'comments' | 'files'>(
     'details',
   )
@@ -320,9 +322,18 @@ export function TaskDetailPanel({
                   className="btn-secondary"
                   style={{ borderRadius: 8, padding: '10px 12px' }}
                   onClick={() => {
-                    if (window.confirm('Delete this task?')) {
-                      void deleteTask(uid, projectId, t.id).then(onClose)
-                    }
+                    void (async () => {
+                      const ok = await confirm({
+                        title: 'Delete task',
+                        message:
+                          'Delete this task, its subtasks, comments, and file metadata? This cannot be undone.',
+                        confirmLabel: 'Delete',
+                        danger: true,
+                      })
+                      if (!ok) return
+                      await deleteTask(uid, projectId, t.id)
+                      onClose()
+                    })()
                   }}
                 >
                   Delete task
@@ -346,8 +357,14 @@ export function TaskDetailPanel({
                 type="button"
                 className="btn-add-task"
                 style={{ marginTop: 10 }}
-                onClick={async () => {
-                  const title = window.prompt('Subtask title')
+                onClick={() => {
+                  void (async () => {
+                  const title = await prompt({
+                    title: 'New subtask',
+                    label: 'Subtask name',
+                    placeholder: 'e.g. Draft outline',
+                    confirmLabel: 'Add',
+                  })
                   if (!title?.trim()) return
                   const siblings = allTasks.filter(
                     (x) => x.parentTaskId === t.id,
@@ -363,6 +380,7 @@ export function TaskDetailPanel({
                     sortOrder,
                   })
                   onSaved()
+                  })()
                 }}
               >
                 + Add subtask

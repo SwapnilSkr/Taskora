@@ -1,12 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import '../components/layout/layout.css'
 import { useAuth } from '../context/AuthContext'
+import { useModals } from '../context/ModalContext'
 import { createProject, subscribeProjects } from '../services/db'
 import type { ProjectDoc } from '../types/models'
 import { useEffect, useState } from 'react'
 
 export function HomePage() {
   const { user } = useAuth()
+  const { prompt } = useModals()
   const nav = useNavigate()
   const [projects, setProjects] = useState<ProjectDoc[]>([])
   const uid = user?.uid ?? ''
@@ -18,7 +20,13 @@ export function HomePage() {
 
   async function onCreate() {
     if (!uid) return
-    const name = window.prompt('Project name', 'New project')
+    const name = await prompt({
+      title: 'Create project',
+      message: 'Projects hold sections, tasks, and every view (list, board, Gantt, and more).',
+      label: 'Project name',
+      defaultValue: 'New project',
+      confirmLabel: 'Create',
+    })
     if (!name?.trim()) return
     const id = await createProject(uid, name.trim())
     nav(`/project/${id}/list`)
