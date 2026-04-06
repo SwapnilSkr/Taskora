@@ -1,15 +1,20 @@
-import '../components/layout/layout.css'
-import type { TaskDoc } from '../types/models'
+import type { StatusDoc, TaskDoc } from '../types/models'
 
-export function DashboardView({ tasks }: { tasks: TaskDoc[] }) {
+export function DashboardView({
+  tasks,
+  statuses,
+}: {
+  tasks: TaskDoc[]
+  statuses: StatusDoc[]
+}) {
   const roots = tasks.filter((t) => !t.parentTaskId)
-  const statusCounts: Record<TaskDoc['status'], number> = {
-    not_started: 0,
-    in_progress: 0,
-    completed: 0,
-    blocked: 0,
+  const statusCounts: Record<string, number> = {}
+  for (const s of statuses) statusCounts[s.id] = 0
+  for (const t of roots) {
+    if (t.statusId) {
+      statusCounts[t.statusId] = (statusCounts[t.statusId] || 0) + 1
+    }
   }
-  for (const t of roots) statusCounts[t.status]++
 
   const totalTracked = roots.reduce((n, t) => n + (t.trackedMinutes ?? 0), 0)
   const totalEst = roots.reduce((n, t) => n + (t.estimatedMinutes ?? 0), 0)
@@ -18,23 +23,34 @@ export function DashboardView({ tasks }: { tasks: TaskDoc[] }) {
     <div className="stats-grid">
       <div className="stat-card">
         <h3>Status mix</h3>
-        {(
-          Object.entries(statusCounts) as [TaskDoc['status'], number][]
-        ).map(([k, v]) => (
-          <div key={k} className="bar-row">
-            <span style={{ width: 110, textTransform: 'capitalize' }}>
-              {k.replace('_', ' ')}
-            </span>
-            <div className="bar">
-              <i
+        {statuses.map((s) => {
+          const v = statusCounts[s.id] || 0
+          return (
+            <div key={s.id} className="bar-row">
+              <span
                 style={{
-                  width: `${(v / Math.max(roots.length, 1)) * 100}%`,
+                  width: 110,
+                  textTransform: 'capitalize',
+                  fontSize: 13,
+                  color: 'var(--text-muted)',
                 }}
-              />
+              >
+                {s.name}
+              </span>
+              <div className="bar">
+                <i
+                  style={{
+                    width: `${(v / Math.max(roots.length, 1)) * 100}%`,
+                    backgroundColor: s.color,
+                  }}
+                />
+              </div>
+              <span style={{ width: 28, textAlign: 'right', fontSize: 13 }}>
+                {v}
+              </span>
             </div>
-            <span style={{ width: 28, textAlign: 'right' }}>{v}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <div className="stat-card">
         <h3>Time tracking</h3>

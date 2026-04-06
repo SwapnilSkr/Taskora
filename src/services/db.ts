@@ -22,6 +22,7 @@ import type {
   CommentDoc,
   ProjectDoc,
   SectionDoc,
+  StatusDoc,
   TaskDoc,
 } from '../types/models'
 import {
@@ -63,6 +64,14 @@ function commentsCol(uid: string, projectId: string, taskId: string) {
 
 function attachmentsCol(uid: string, projectId: string, taskId: string) {
   return collection(taskRef(uid, projectId, taskId), 'attachments')
+}
+
+function statusesCol(uid: string) {
+  return collection(userRoot(uid), 'statuses')
+}
+
+function statusRef(uid: string, statusId: string) {
+  return doc(statusesCol(uid), statusId)
 }
 
 export async function upsertUserProfile(
@@ -109,6 +118,18 @@ function mapSection(id: string, d: Record<string, unknown>): SectionDoc {
   }
 }
 
+function mapStatus(id: string, d: Record<string, unknown>): StatusDoc {
+  return {
+    id,
+    name: String(d.name ?? ''),
+    color: String(d.color ?? '#cbd5e1'),
+    isCompleted: Boolean(d.isCompleted),
+    isDefault: Boolean(d.isDefault),
+    sortOrder: typeof d.sortOrder === 'number' ? d.sortOrder : 0,
+    createdAt: (d.createdAt as Timestamp | null) ?? null,
+  }
+}
+
 function mapTask(id: string, d: Record<string, unknown>): TaskDoc {
   return {
     id,
@@ -116,7 +137,7 @@ function mapTask(id: string, d: Record<string, unknown>): TaskDoc {
     title: String(d.title ?? ''),
     description: String(d.description ?? ''),
     completed: Boolean(d.completed),
-    status: (d.status as TaskDoc['status']) ?? 'not_started',
+    statusId: (d.statusId as string | null) ?? (d.status as string | null) ?? null,
     priority: (d.priority as TaskDoc['priority']) ?? 'medium',
     assigneeId: (d.assigneeId as string | null) ?? null,
     startDate: (d.startDate as Timestamp | null) ?? null,
@@ -343,6 +364,86 @@ export function subscribeTasks(
   })
 }
 
+export function subscribeStatuses(
+  uid: string,
+  cb: (statuses: StatusDoc[]) => void,
+): Unsubscribe {
+  const q = query(statusesCol(uid), orderBy('sortOrder', 'asc'))
+  return onSnapshot(q, (snap) => {
+    cb(
+      snap.docs.map((x) =>
+        mapStatus(x.id, x.data() as Record<string, unknown>),
+      ),
+    )
+  })
+}
+
+export async function createStatus(
+  uid: string,
+  data: Omit<StatusDoc, 'id' | 'createdAt'>,
+): Promise<string> {
+  const ref = await addDoc(statusesCol(uid), {
+    ...data,
+    createdAt: ts(),
+  })
+  return ref.id
+}
+
+export async function updateStatus(
+  uid: string,
+  statusId: string,
+  patch: Partial<Omit<StatusDoc, 'id' | 'createdAt'>>,
+): Promise<void> {
+  await updateDoc(statusRef(uid, statusId), patch)
+}
+
+export async function deleteStatus(
+  uid: string,
+  statusId: string,
+): Promise<void> {
+  await deleteDoc(statusRef(uid, statusId))
+}
+
+export async function seedDefaultStatuses(uid: string): Promise<void> {
+  const snap = await getDocs(statusesCol(uid))
+  if (!snap.empty) return
+
+  const defaults: Omit<StatusDoc, 'id' | 'createdAt'>[] = [
+    {
+      name: 'Pending',
+      color: '#94a3b8',
+      isCompleted: false,
+      isDefault: true,
+      sortOrder: 0,
+    },
+    {
+      name: 'In Progress',
+      color: '#3b82f6',
+      isCompleted: false,
+      isDefault: false,
+      sortOrder: 1,
+    },
+    {
+      name: 'In Review',
+      color: '#f59e0b',
+      isCompleted: false,
+      isDefault: false,
+      sortOrder: 2,
+    },
+    {
+      name: 'Completed',
+      color: '#10b981',
+      isCompleted: true,
+      isDefault: false,
+      sortOrder: 3,
+    },
+  ]
+
+  for (const s of defaults) {
+    await createStatus(uid, s)
+  }
+}
+
 export async function createTask(
   uid: string,
   projectId: string,
@@ -368,12 +469,17 @@ export async function createTask(
       throw new Error('Subtasks cannot have subtasks')
     }
   }
+  const defaultSnap = await getDocs(
+    query(statusesCol(uid), where('isDefault', '==', true)),
+  )
+  const defaultStatusId = defaultSnap.docs[0]?.id ?? null
+
   const ref = await addDoc(tasksCol(uid, projectId), {
     sectionId: input.sectionId,
     title: input.title,
     description: '',
     completed: false,
-    status: 'not_started',
+    statusId: defaultStatusId,
     priority: 'medium',
     assigneeId: null,
     startDate: null,
@@ -415,7 +521,9 @@ async function deleteTaskLeaf(
 ): Promise<void> {
   const cs = await getDocs(commentsCol(uid, projectId, taskId))
   const batch = writeBatch(getDb())
-  cs.docs.forEach((d) => batch.delete(d.ref))
+  cs.docs.forEach((d) => {
+    batch.delete(d.ref)
+  })
   const as = await getDocs(attachmentsCol(uid, projectId, taskId))
   const bucket = getFirebaseStorage()
   for (const d of as.docs) {
@@ -474,17 +582,23 @@ export async function bulkSetTasksCompleted(
   taskIds: string[],
   completed: boolean,
 ): Promise<void> {
+  const statusesSnap = await getDocs(statusesCol(uid))
+  const statuses = statusesSnap.docs.map((x) => mapStatus(x.id, x.data() as Record<string, unknown>))
+  const comp = statuses.find(s => s.isCompleted)
+  const def = statuses.find(s => s.isDefault)
+
   let batch = writeBatch(getDb())
   let n = 0
   for (const id of taskIds) {
     const patch: Record<string, unknown> = {
       completed,
-      status: completed ? 'completed' : 'not_started',
+      statusId: completed ? (comp?.id ?? null) : (def?.id ?? null),
       completedAt: completed ? ts() : null,
       updatedAt: ts(),
     }
     batch.update(taskRef(uid, projectId, id), patch)
     n++
+// ... (rest of the batch logic)
     if (n >= BATCH_LIMIT) {
       await batch.commit()
       batch = writeBatch(getDb())

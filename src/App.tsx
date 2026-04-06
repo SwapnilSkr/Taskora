@@ -9,6 +9,7 @@ import { LoginPage } from './pages/LoginPage'
 import { MyTasksPage } from './pages/MyTasksPage'
 import { ProjectPage } from './pages/ProjectPage'
 import { ProjectRedirect } from './pages/ProjectRedirect'
+import { StatusSettingsPage } from './pages/StatusSettingsPage'
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth()
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="inbox" element={<InboxPage />} />
           <Route path="project/:projectId" element={<ProjectRedirect />} />
           <Route path="project/:projectId/:view" element={<ProjectPage />} />
+          <Route path="status" element={<StatusSettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

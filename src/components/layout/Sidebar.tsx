@@ -14,6 +14,7 @@ import {
   IconHome,
   IconMail,
   IconPlus,
+  IconSettings,
   IconTarget,
 } from '../icons'
 import './layout.css'
@@ -66,6 +67,10 @@ export function Sidebar() {
       <NavLink to="/inbox" className="nav-item">
         <IconBell />
         <span>Inbox</span>
+      </NavLink>
+      <NavLink to="/status" className="nav-item">
+        <IconSettings />
+        <span>Status tags</span>
       </NavLink>
 
       <div className="nav-section-label">Insights</div>

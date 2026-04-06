@@ -18,7 +18,7 @@ import {
   type ReactNode,
 } from 'react'
 import { getFirebaseAuth, initAnalytics } from '../lib/firebase'
-import { upsertUserProfile } from '../services/db'
+import { seedDefaultStatuses, upsertUserProfile } from '../services/db'
 
 type AuthCtx = {
   user: User | null
@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u)
       setReady(true)
       if (u) {
+        void seedDefaultStatuses(u.uid)
         void upsertUserProfile(u.uid, {
           email: u.email,
           displayName: u.displayName,

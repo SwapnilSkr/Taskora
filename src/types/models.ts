@@ -1,10 +1,14 @@
 import type { Timestamp } from 'firebase/firestore'
 
-export type TaskStatus =
-  | 'not_started'
-  | 'in_progress'
-  | 'completed'
-  | 'blocked'
+export interface StatusDoc {
+  id: string
+  name: string
+  color: string
+  isCompleted: boolean
+  isDefault: boolean
+  sortOrder: number
+  createdAt: Timestamp | null
+}
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 
@@ -44,7 +48,7 @@ export interface TaskDoc {
   title: string
   description: string
   completed: boolean
-  status: TaskStatus
+  statusId: string | null
   priority: TaskPriority
   assigneeId: string | null
   startDate: Timestamp | null
@@ -57,6 +61,7 @@ export interface TaskDoc {
   trackedMinutes: number | null
   approvalStatus: ApprovalStatus
   customFields: Record<string, CustomFieldValue>
+  columns?: Record<string, CustomFieldValue>
   dependencies: string[]
   createdAt: Timestamp | null
   updatedAt: Timestamp | null

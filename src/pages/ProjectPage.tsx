@@ -23,6 +23,7 @@ import {
   renameSection,
   subscribeProjects,
   subscribeSections,
+  subscribeStatuses,
   subscribeTasks,
   updateProject,
   updateTask,
@@ -31,6 +32,7 @@ import type {
   ProjectDoc,
   ProjectView,
   SectionDoc,
+  StatusDoc,
   TaskDoc,
 } from '../types/models'
 import { BoardView } from '../views/BoardView'
@@ -55,7 +57,7 @@ const VIEWS: { id: ProjectView; label: string }[] = [
   { id: 'workload', label: 'Workload' },
 ]
 
-type StatusFilter = 'all' | TaskDoc['status']
+type StatusFilter = 'all' | string
 type AssigneeFilter = 'all' | 'me' | 'unassigned'
 
 export function ProjectPage() {
@@ -70,6 +72,7 @@ export function ProjectPage() {
 
   const [projects, setProjects] = useState<ProjectDoc[]>([])
   const [sections, setSections] = useState<SectionDoc[]>([])
+  const [statuses, setStatuses] = useState<StatusDoc[]>([])
   const [tasks, setTasks] = useState<TaskDoc[]>([])
   const [selected, setSelected] = useState<TaskDoc | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
@@ -96,9 +99,11 @@ export function ProjectPage() {
     if (!projectId || !uid) return
     const u = subscribeSections(uid, projectId, setSections)
     const v = subscribeTasks(uid, projectId, setTasks)
+    const w = subscribeStatuses(uid, setStatuses)
     return () => {
       u()
       v()
+      w()
     }
   }, [uid, projectId])
 
@@ -139,7 +144,7 @@ export function ProjectPage() {
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       if (filterHideCompleted && t.completed) return false
-      if (filterStatus !== 'all' && t.status !== filterStatus) return false
+      if (filterStatus !== 'all' && t.statusId !== filterStatus) return false
       if (filterAssignee === 'me' && t.assigneeId !== uid) return false
       if (filterAssignee === 'unassigned' && t.assigneeId) return false
       return true
@@ -524,23 +529,23 @@ export function ProjectPage() {
               }}
             >
               <div className="filter-dropdown-section">Status</div>
-              {(
-                [
-                  ['all', 'All statuses'],
-                  ['not_started', 'Not started'],
-                  ['in_progress', 'In progress'],
-                  ['completed', 'Completed'],
-                  ['blocked', 'Blocked'],
-                ] as const
-              ).map(([id, lab]) => (
+              <button
+                type="button"
+                className="filter-option"
+                data-active={filterStatus === 'all' ? 'true' : 'false'}
+                onClick={() => setFilterStatus('all')}
+              >
+                All statuses
+              </button>
+              {statuses.map((s) => (
                 <button
-                  key={id}
+                  key={s.id}
                   type="button"
                   className="filter-option"
-                  data-active={filterStatus === id ? 'true' : 'false'}
-                  onClick={() => setFilterStatus(id)}
+                  data-active={filterStatus === s.id ? 'true' : 'false'}
+                  onClick={() => setFilterStatus(s.id)}
                 >
-                  {lab}
+                  {s.name}
                 </button>
               ))}
               <div className="filter-dropdown-section">Assignee</div>
@@ -643,6 +648,7 @@ export function ProjectPage() {
       {activeView === 'list' ? (
         <ListView
           sections={sections}
+          statuses={statuses}
           tasks={filteredTasks}
           group={group}
           sort={sort}
@@ -652,12 +658,14 @@ export function ProjectPage() {
           onToggleSelect={toggleSelect}
           onSetManySelected={setManySelected}
           onTaskClick={setSelected}
-          onToggleComplete={(t) =>
+          onToggleComplete={(t) => {
+            const comp = statuses.find((s) => s.isCompleted)
+            const def = statuses.find((s) => s.isDefault)
             void updateTask(uid, pid, t.id, {
               completed: !t.completed,
-              status: !t.completed ? 'completed' : 'not_started',
+              statusId: !t.completed ? (comp?.id ?? null) : (def?.id ?? null),
             })
-          }
+          }}
           onAddTask={(sid) => void onAddTask(sid)}
           onAssign={handleAssignQuick}
           onStartChange={handleStartQuick}
@@ -678,6 +686,7 @@ export function ProjectPage() {
           uid={uid}
           projectId={pid}
           sections={sections}
+          statuses={statuses}
           tasks={filteredTasks}
           onTaskClick={setSelected}
         />
@@ -690,7 +699,7 @@ export function ProjectPage() {
         />
       ) : null}
       {activeView === 'dashboard' ? (
-        <DashboardView tasks={filteredTasks} />
+        <DashboardView tasks={filteredTasks} statuses={statuses} />
       ) : null}
       {activeView === 'gantt' ? (
         <GanttView tasks={filteredTasks} onTaskClick={setSelected} />

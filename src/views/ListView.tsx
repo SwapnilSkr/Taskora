@@ -1,100 +1,126 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { IconCalendar, IconChevronDown, IconPlus, IconUser } from '../components/icons'
-import '../components/layout/layout.css'
-import type { SectionDoc, TaskDoc } from '../types/models'
+import type React from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import {
+  IconCalendar,
+  IconChevronDown,
+  IconPlus,
+  IconUser,
+} from "../components/icons";
+import "../components/layout/layout.css";
+import type { SectionDoc, StatusDoc, TaskDoc } from "../types/models";
 import {
   dateToInputValue,
   dueBadgeState,
   fmtDate,
   tsToDate,
-} from '../utils/format'
+} from "../utils/format";
 
-export type GroupMode = 'section' | 'assignee' | 'due' | 'status' | 'priority'
-export type SortMode = 'sortOrder' | 'dueDate' | 'priority' | 'name'
+export type GroupMode = "section" | "assignee" | "due" | "status" | "priority";
+export type SortMode = "sortOrder" | "dueDate" | "priority" | "name";
 
 type Pop =
   | null
-  | { k: 'assign'; taskId: string }
-  | { k: 'start'; taskId: string }
-  | { k: 'due'; taskId: string }
-  | { k: 'prio'; taskId: string }
-  | { k: 'taskmenu'; taskId: string }
-  | { k: 'sectionmenu'; sectionId: string }
+  | { k: "assign"; taskId: string }
+  | { k: "start"; taskId: string }
+  | { k: "due"; taskId: string }
+  | { k: "prio"; taskId: string }
+  | { k: "taskmenu"; taskId: string }
+  | { k: "sectionmenu"; sectionId: string };
 
 type Props = {
-  sections: SectionDoc[]
-  tasks: TaskDoc[]
-  group: GroupMode
-  sort: SortMode
-  uid: string
-  multiSelectMode: boolean
-  selectedIds: Set<string>
-  onToggleSelect: (taskId: string) => void
-  onSetManySelected: (taskIds: string[], selected: boolean) => void
-  onTaskClick: (t: TaskDoc) => void
-  onToggleComplete: (t: TaskDoc) => void
-  onAddTask: (sectionId: string) => void
-  onAssign: (taskId: string, assigneeId: string | null) => void
-  onStartChange: (taskId: string, ymd: string | null) => void
-  onDueChange: (taskId: string, ymd: string | null) => void
-  onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
-  onAddSubtask: (parentId: string, sectionId: string, title: string) => void
-  onDeleteTask: (taskId: string) => void
-  onRequestRenameSection: (sectionId: string, currentName: string) => void
-  onDeleteSection: (sectionId: string) => void
-}
+  sections: SectionDoc[];
+  statuses: StatusDoc[];
+  tasks: TaskDoc[];
+  group: GroupMode;
+  sort: SortMode;
+  uid: string;
+  multiSelectMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (taskId: string) => void;
+  onSetManySelected: (taskIds: string[], selected: boolean) => void;
+  onTaskClick: (t: TaskDoc) => void;
+  onToggleComplete: (t: TaskDoc) => void;
+  onAddTask: (sectionId: string) => void;
+  onAssign: (taskId: string, assigneeId: string | null) => void;
+  onStartChange: (taskId: string, ymd: string | null) => void;
+  onDueChange: (taskId: string, ymd: string | null) => void;
+  onPriorityChange: (taskId: string, priority: TaskDoc["priority"]) => void;
+  onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  onRequestRenameSection: (sectionId: string, currentName: string) => void;
+  onDeleteSection: (sectionId: string) => void;
+};
 
 function groupKey(
   t: TaskDoc,
   mode: GroupMode,
   sections: SectionDoc[],
+  statuses: StatusDoc[],
   uid: string,
 ): string {
   switch (mode) {
-    case 'section':
-      return sections.find((s) => s.id === t.sectionId)?.name ?? 'Section'
-    case 'assignee':
+    case "section":
+      return sections.find((s) => s.id === t.sectionId)?.name ?? "Section";
+    case "assignee":
       return t.assigneeId === uid
-        ? 'Me'
+        ? "Me"
         : t.assigneeId
-          ? 'Assigned'
-          : 'Unassigned'
-    case 'due': {
-      const d = tsToDate(t.dueDate)
-      if (!d) return 'No due date'
-      return `Due ${d.toISOString().slice(0, 10)}`
+          ? "Assigned"
+          : "Unassigned";
+    case "due": {
+      const d = tsToDate(t.dueDate);
+      if (!d) return "No due date";
+      return `Due ${d.toISOString().slice(0, 10)}`;
     }
-    case 'status':
-      return t.status.replace('_', ' ')
-    case 'priority':
-      return t.priority
+    case "status": {
+      const s = statuses.find((x) => x.id === t.statusId);
+      return s?.name ?? "No status";
+    }
+    case "priority":
+      return t.priority;
     default:
-      return ''
+      return "";
   }
 }
 
+function StatusTag({
+  sid,
+  statuses,
+}: {
+  sid: string | null;
+  statuses: StatusDoc[];
+}) {
+  const s = statuses.find((x) => x.id === sid);
+  if (!s) return <span className="status-badge-none" />;
+  return (
+    <span className="status-badge" style={{ backgroundColor: s.color }}>
+      {s.name}
+    </span>
+  );
+}
+
 function sortTasks(list: TaskDoc[], mode: SortMode): TaskDoc[] {
-  const out = [...list]
-  if (mode === 'name') {
-    out.sort((a, b) => a.title.localeCompare(b.title))
-  } else if (mode === 'dueDate') {
+  const out = [...list];
+  if (mode === "name") {
+    out.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (mode === "dueDate") {
     out.sort((a, b) => {
-      const da = tsToDate(a.dueDate)?.getTime() ?? Infinity
-      const db = tsToDate(b.dueDate)?.getTime() ?? Infinity
-      return da - db
-    })
-  } else if (mode === 'priority') {
-    const rank: Record<TaskDoc['priority'], number> = {
+      const da = tsToDate(a.dueDate)?.getTime() ?? Infinity;
+      const db = tsToDate(b.dueDate)?.getTime() ?? Infinity;
+      return da - db;
+    });
+  } else if (mode === "priority") {
+    const rank: Record<TaskDoc["priority"], number> = {
       urgent: 0,
       high: 1,
       medium: 2,
       low: 3,
-    }
-    out.sort((a, b) => rank[a.priority] - rank[b.priority])
+    };
+    out.sort((a, b) => rank[a.priority] - rank[b.priority]);
   } else {
-    out.sort((a, b) => a.sortOrder - b.sortOrder)
+    out.sort((a, b) => a.sortOrder - b.sortOrder);
   }
-  return out
+  return out;
 }
 
 function GroupSelectCheckbox({
@@ -102,18 +128,18 @@ function GroupSelectCheckbox({
   selectedIds,
   onSetManySelected,
 }: {
-  taskIds: string[]
-  selectedIds: Set<string>
-  onSetManySelected: (ids: string[], selected: boolean) => void
+  taskIds: string[];
+  selectedIds: Set<string>;
+  onSetManySelected: (ids: string[], selected: boolean) => void;
 }) {
-  const ref = useRef<HTMLInputElement>(null)
-  const picked = taskIds.filter((id) => selectedIds.has(id)).length
-  const all = taskIds.length > 0 && picked === taskIds.length
-  const some = picked > 0 && !all
+  const ref = useRef<HTMLInputElement>(null);
+  const picked = taskIds.filter((id) => selectedIds.has(id)).length;
+  const all = taskIds.length > 0 && picked === taskIds.length;
+  const some = picked > 0 && !all;
 
   useEffect(() => {
-    if (ref.current) ref.current.indeterminate = some
-  }, [some])
+    if (ref.current) ref.current.indeterminate = some;
+  }, [some]);
 
   return (
     <input
@@ -125,11 +151,12 @@ function GroupSelectCheckbox({
       onChange={() => onSetManySelected(taskIds, !all)}
       onClick={(e) => e.stopPropagation()}
     />
-  )
+  );
 }
 
 export function ListView({
   sections,
+  statuses,
   tasks,
   group,
   sort,
@@ -150,43 +177,43 @@ export function ListView({
   onRequestRenameSection,
   onDeleteSection,
 }: Props) {
-  const [pop, setPop] = useState<Pop>(null)
+  const [pop, setPop] = useState<Pop>(null);
   const [inlineSub, setInlineSub] = useState<{
-    parentId: string
-    sectionId: string
-  } | null>(null)
-  const subInputRef = useRef<HTMLInputElement>(null)
+    parentId: string;
+    sectionId: string;
+  } | null>(null);
+  const subInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!pop) return
+    if (!pop) return;
     function close(e: MouseEvent) {
-      const el = e.target as HTMLElement
-      if (el.closest('[data-popover-root]')) return
-      setPop(null)
+      const el = e.target as HTMLElement;
+      if (el.closest("[data-popover-root]")) return;
+      setPop(null);
     }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [pop])
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [pop]);
 
   useEffect(() => {
-    if (inlineSub) subInputRef.current?.focus()
-  }, [inlineSub])
+    if (inlineSub) subInputRef.current?.focus();
+  }, [inlineSub]);
 
-  const roots = tasks.filter((x) => !x.parentTaskId)
+  const roots = tasks.filter((x) => !x.parentTaskId);
 
   const sectionBody =
-    group === 'section'
+    group === "section"
       ? sections.map((s) => {
           const rowTasks = sortTasks(
             roots.filter((t) => t.sectionId === s.id),
             sort,
-          )
-          const ids = rowTasks.map((t) => t.id)
+          );
+          const ids = rowTasks.map((t) => t.id);
           return (
             <Fragment key={s.id}>
               <tr className="section-label-row">
                 {multiSelectMode ? (
-                  <td style={{ width: 36, verticalAlign: 'middle' }}>
+                  <td style={{ width: 36, verticalAlign: "middle" }}>
                     {ids.length > 0 ? (
                       <GroupSelectCheckbox
                         taskIds={ids}
@@ -212,30 +239,30 @@ export function ListView({
                         className="icon-btn section-menu-btn"
                         aria-label="Section options"
                         onClick={(e) => {
-                          e.stopPropagation()
+                          e.stopPropagation();
                           setPop(
-                            pop?.k === 'sectionmenu' && pop.sectionId === s.id
+                            pop?.k === "sectionmenu" && pop.sectionId === s.id
                               ? null
-                              : { k: 'sectionmenu', sectionId: s.id },
-                          )
+                              : { k: "sectionmenu", sectionId: s.id },
+                          );
                         }}
                       >
                         <IconChevronDown
                           style={{
                             transform:
-                              pop?.k === 'sectionmenu' && pop.sectionId === s.id
-                                ? 'rotate(180deg)'
+                              pop?.k === "sectionmenu" && pop.sectionId === s.id
+                                ? "rotate(180deg)"
                                 : undefined,
                           }}
                         />
                       </button>
-                      {pop?.k === 'sectionmenu' && pop.sectionId === s.id ? (
+                      {pop?.k === "sectionmenu" && pop.sectionId === s.id ? (
                         <div className="inline-popover" data-popover-root>
                           <button
                             type="button"
                             onClick={() => {
-                              setPop(null)
-                              onRequestRenameSection(s.id, s.name)
+                              setPop(null);
+                              onRequestRenameSection(s.id, s.name);
                             }}
                           >
                             Rename section…
@@ -244,8 +271,8 @@ export function ListView({
                             type="button"
                             className="danger-option"
                             onClick={() => {
-                              setPop(null)
-                              void onDeleteSection(s.id)
+                              setPop(null);
+                              void onDeleteSection(s.id);
                             }}
                           >
                             Delete section…
@@ -279,26 +306,36 @@ export function ListView({
                     }
                     sort={sort}
                     subtaskComposerOpen={inlineSub?.parentId === t.id}
+                    statuses={statuses}
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
                       <td colSpan={multiSelectMode ? 9 : 8}>
                         <div className="subtask-composer">
-                          <span className="subtask-composer-branch" aria-hidden />
+                          <span
+                            className="subtask-composer-branch"
+                            aria-hidden
+                          />
                           <input
                             ref={subInputRef}
                             className="input subtask-composer-input"
                             placeholder="Subtask name — Enter to save, Esc to cancel"
                             onKeyDown={(e) => {
-                              if (e.key === 'Escape') {
-                                setInlineSub(null)
-                                return
+                              if (e.key === "Escape") {
+                                setInlineSub(null);
+                                return;
                               }
-                              if (e.key !== 'Enter') return
-                              const v = (e.target as HTMLInputElement).value.trim()
-                              if (!v) return
-                              onAddSubtask(inlineSub.parentId, inlineSub.sectionId, v)
-                              setInlineSub(null)
+                              if (e.key !== "Enter") return;
+                              const v = (
+                                e.target as HTMLInputElement
+                              ).value.trim();
+                              if (!v) return;
+                              onAddSubtask(
+                                inlineSub.parentId,
+                                inlineSub.sectionId,
+                                v,
+                              );
+                              setInlineSub(null);
                             }}
                           />
                           <button
@@ -315,27 +352,27 @@ export function ListView({
                 </Fragment>
               ))}
             </Fragment>
-          )
+          );
         })
       : Array.from(
           (() => {
-            const gmap = new Map<string, TaskDoc[]>()
+            const gmap = new Map<string, TaskDoc[]>();
             for (const t of roots) {
-              const k = groupKey(t, group, sections, uid)
-              const arr = gmap.get(k) ?? []
-              arr.push(t)
-              gmap.set(k, arr)
+              const k = groupKey(t, group, sections, statuses, uid);
+              const arr = gmap.get(k) ?? [];
+              arr.push(t);
+              gmap.set(k, arr);
             }
-            return gmap
+            return gmap;
           })().entries(),
         ).map(([key, rowTasks]) => {
-          const sorted = sortTasks(rowTasks, sort)
-          const ids = sorted.map((t) => t.id)
+          const sorted = sortTasks(rowTasks, sort);
+          const ids = sorted.map((t) => t.id);
           return (
             <Fragment key={key}>
               <tr className="section-label-row">
                 {multiSelectMode ? (
-                  <td style={{ width: 36, verticalAlign: 'middle' }}>
+                  <td style={{ width: 36, verticalAlign: "middle" }}>
                     {ids.length > 0 ? (
                       <GroupSelectCheckbox
                         taskIds={ids}
@@ -372,30 +409,36 @@ export function ListView({
                     }
                     sort={sort}
                     subtaskComposerOpen={inlineSub?.parentId === t.id}
+                    statuses={statuses}
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr className="subtask-composer-row">
                       <td colSpan={multiSelectMode ? 9 : 8}>
                         <div className="subtask-composer">
-                          <span className="subtask-composer-branch" aria-hidden />
+                          <span
+                            className="subtask-composer-branch"
+                            aria-hidden
+                          />
                           <input
                             ref={subInputRef}
                             className="input subtask-composer-input"
                             placeholder="Subtask name — Enter to save"
                             onKeyDown={(e) => {
-                              if (e.key === 'Escape') {
-                                setInlineSub(null)
-                                return
+                              if (e.key === "Escape") {
+                                setInlineSub(null);
+                                return;
                               }
-                              if (e.key !== 'Enter') return
-                              const v = (e.target as HTMLInputElement).value.trim()
-                              if (!v || !inlineSub) return
+                              if (e.key !== "Enter") return;
+                              const v = (
+                                e.target as HTMLInputElement
+                              ).value.trim();
+                              if (!v || !inlineSub) return;
                               onAddSubtask(
                                 inlineSub.parentId,
                                 inlineSub.sectionId,
                                 v,
-                              )
-                              setInlineSub(null)
+                              );
+                              setInlineSub(null);
                             }}
                           />
                           <button
@@ -412,13 +455,13 @@ export function ListView({
                 </Fragment>
               ))}
             </Fragment>
-          )
-        })
+          );
+        });
 
   return (
     <div className="table-wrap">
       <table
-        className={`task-table${multiSelectMode ? ' task-table--multi-select' : ''}`}
+        className={`task-table${multiSelectMode ? " task-table--multi-select" : ""}`}
       >
         <thead>
           <tr>
@@ -429,20 +472,21 @@ export function ListView({
               ✓
             </th>
             <th>Task</th>
-            <th style={{ width: '11%' }} title="Add subtasks">
+            <th style={{ width: "11%" }}>Status</th>
+            <th style={{ width: "10%" }} title="Add subtasks">
               Subtasks
             </th>
-            <th style={{ width: '14%' }}>Assignee</th>
-            <th style={{ width: '12%' }}>Start</th>
-            <th style={{ width: '12%' }}>Due</th>
-            <th style={{ width: '12%' }}>Priority</th>
+            <th style={{ width: "14%" }}>Assignee</th>
+            <th style={{ width: "11%" }}>Start</th>
+            <th style={{ width: "11%" }}>Due</th>
+            <th style={{ width: "10%" }}>Priority</th>
             <th style={{ width: 44 }} aria-label="Actions" />
           </tr>
         </thead>
         <tbody>{sectionBody}</tbody>
       </table>
     </div>
-  )
+  );
 }
 
 function TaskRowMetaColumns({
@@ -458,40 +502,50 @@ function TaskRowMetaColumns({
   onDeleteTask,
   onTaskClick,
   onOpenSubtask,
+  statuses,
 }: {
-  t: TaskDoc
-  uid: string
-  pop: Pop
-  setPop: (p: Pop) => void
-  subtaskQuickAdd: { count: number; onAdd: () => void } | null
-  onAssign: (taskId: string, assigneeId: string | null) => void
-  onStartChange: (taskId: string, ymd: string | null) => void
-  onDueChange: (taskId: string, ymd: string | null) => void
-  onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
-  onDeleteTask: (taskId: string) => void
-  onTaskClick: (t: TaskDoc) => void
-  onOpenSubtask: () => void
+  t: TaskDoc;
+  uid: string;
+  pop: Pop;
+  setPop: (p: Pop) => void;
+  subtaskQuickAdd: { count: number; onAdd: () => void } | null;
+  onAssign: (taskId: string, assigneeId: string | null) => void;
+  onStartChange: (taskId: string, ymd: string | null) => void;
+  onDueChange: (taskId: string, ymd: string | null) => void;
+  onPriorityChange: (taskId: string, priority: TaskDoc["priority"]) => void;
+  onDeleteTask: (taskId: string) => void;
+  onTaskClick: (t: TaskDoc) => void;
+  onOpenSubtask: () => void;
+  statuses: StatusDoc[];
 }) {
-  const start = tsToDate(t.startDate)
-  const due = tsToDate(t.dueDate)
-  const dueState = dueBadgeState(due, t.completed)
+  const start = tsToDate(t.startDate);
+  const due = tsToDate(t.dueDate);
+  const dueState = dueBadgeState(due, t.completed);
   const assigneeLabel =
-    t.assigneeId === uid ? 'You' : t.assigneeId ? 'Member' : 'Assign'
-  const prios: TaskDoc['priority'][] = ['low', 'medium', 'high', 'urgent']
+    t.assigneeId === uid ? "You" : t.assigneeId ? "Member" : "Assign";
+  const prios: TaskDoc["priority"][] = ["low", "medium", "high", "urgent"];
+
+  const stopProp = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
 
   return (
     <>
+      <td style={{ verticalAlign: "middle" }}>
+        <StatusTag sid={t.statusId} statuses={statuses} />
+      </td>
       {subtaskQuickAdd ? (
         <td
-          style={{ verticalAlign: 'middle' }}
+          style={{ verticalAlign: "middle" }}
           data-popover-root
-          onClick={(e) => e.stopPropagation()}
+          onClick={stopProp}
+          onKeyDown={stopProp}
         >
           <button
             type="button"
-            className={`cell-quick-btn subtask-quick-btn ${subtaskQuickAdd.count > 0 ? 'is-set' : ''}`}
+            className={`cell-quick-btn subtask-quick-btn ${subtaskQuickAdd.count > 0 ? "is-set" : ""}`}
             title={
-              subtaskQuickAdd.count > 0 ? 'Add another subtask' : 'Add subtask'
+              subtaskQuickAdd.count > 0 ? "Add another subtask" : "Add subtask"
             }
             onClick={() => subtaskQuickAdd.onAdd()}
           >
@@ -499,14 +553,14 @@ function TaskRowMetaColumns({
             <span>
               {subtaskQuickAdd.count > 0
                 ? `${subtaskQuickAdd.count} subtasks`
-                : 'Add subtask'}
+                : "Add subtask"}
             </span>
           </button>
         </td>
       ) : (
         <td
           className="subtask-col-na"
-          style={{ verticalAlign: 'middle' }}
+          style={{ verticalAlign: "middle" }}
           title="Nested subtasks are not supported. Add subtasks from the parent task in the list."
         >
           <span className="subtask-col-na__dash" aria-hidden>
@@ -515,31 +569,32 @@ function TaskRowMetaColumns({
         </td>
       )}
       <td
-        style={{ verticalAlign: 'middle', position: 'relative' }}
+        style={{ verticalAlign: "middle", position: "relative" }}
         data-popover-root
-        onClick={(e) => e.stopPropagation()}
+        onClick={stopProp}
+        onKeyDown={stopProp}
       >
         <button
           type="button"
-          className={`cell-quick-btn ${t.assigneeId ? 'is-set' : ''}`}
+          className={`cell-quick-btn ${t.assigneeId ? "is-set" : ""}`}
           onClick={() =>
             setPop(
-              pop?.k === 'assign' && pop.taskId === t.id
+              pop?.k === "assign" && pop.taskId === t.id
                 ? null
-                : { k: 'assign', taskId: t.id },
+                : { k: "assign", taskId: t.id },
             )
           }
         >
           <IconUser width={14} height={14} />
           <span>{assigneeLabel}</span>
         </button>
-        {pop?.k === 'assign' && pop.taskId === t.id ? (
+        {pop?.k === "assign" && pop.taskId === t.id ? (
           <div className="inline-popover" data-popover-root>
             <button
               type="button"
               onClick={() => {
-                onAssign(t.id, uid)
-                setPop(null)
+                onAssign(t.id, uid);
+                setPop(null);
               }}
             >
               Assign to me
@@ -547,8 +602,8 @@ function TaskRowMetaColumns({
             <button
               type="button"
               onClick={() => {
-                onAssign(t.id, null)
-                setPop(null)
+                onAssign(t.id, null);
+                setPop(null);
               }}
             >
               Unassigned
@@ -557,25 +612,26 @@ function TaskRowMetaColumns({
         ) : null}
       </td>
       <td
-        style={{ verticalAlign: 'middle', position: 'relative' }}
+        style={{ verticalAlign: "middle", position: "relative" }}
         data-popover-root
-        onClick={(e) => e.stopPropagation()}
+        onClick={stopProp}
+        onKeyDown={stopProp}
       >
         <button
           type="button"
-          className={`cell-quick-btn start-cell-btn ${start ? 'is-set' : ''}`}
+          className={`cell-quick-btn start-cell-btn ${start ? "is-set" : ""}`}
           onClick={() =>
             setPop(
-              pop?.k === 'start' && pop.taskId === t.id
+              pop?.k === "start" && pop.taskId === t.id
                 ? null
-                : { k: 'start', taskId: t.id },
+                : { k: "start", taskId: t.id },
             )
           }
         >
           <IconCalendar width={14} height={14} />
           <span>{fmtDate(start)}</span>
         </button>
-        {pop?.k === 'start' && pop.taskId === t.id ? (
+        {pop?.k === "start" && pop.taskId === t.id ? (
           <div className="inline-popover inline-popover-wide" data-popover-root>
             <div className="mini-label">Start date</div>
             <input
@@ -588,8 +644,8 @@ function TaskRowMetaColumns({
               type="button"
               className="linkish-btn"
               onClick={() => {
-                onStartChange(t.id, null)
-                setPop(null)
+                onStartChange(t.id, null);
+                setPop(null);
               }}
             >
               Clear start date
@@ -598,27 +654,32 @@ function TaskRowMetaColumns({
         ) : null}
       </td>
       <td
-        style={{ verticalAlign: 'middle', position: 'relative' }}
+        style={{ verticalAlign: "middle", position: "relative" }}
         data-popover-root
-        onClick={(e) => e.stopPropagation()}
+        onClick={stopProp}
+        onKeyDown={stopProp}
       >
         <button
           type="button"
-          className={`cell-quick-btn due-cell-btn ${due ? 'is-set' : ''}`}
+          className={`cell-quick-btn due-cell-btn ${due ? "is-set" : ""}`}
           onClick={() =>
             setPop(
-              pop?.k === 'due' && pop.taskId === t.id
+              pop?.k === "due" && pop.taskId === t.id
                 ? null
-                : { k: 'due', taskId: t.id },
+                : { k: "due", taskId: t.id },
             )
           }
         >
           <IconCalendar width={14} height={14} />
-          <span className={dueState !== 'none' ? `due-soft due-soft-${dueState}` : ''}>
+          <span
+            className={
+              dueState !== "none" ? `due-soft due-soft-${dueState}` : ""
+            }
+          >
             {fmtDate(due)}
           </span>
         </button>
-        {pop?.k === 'due' && pop.taskId === t.id ? (
+        {pop?.k === "due" && pop.taskId === t.id ? (
           <div className="inline-popover inline-popover-wide" data-popover-root>
             <div className="mini-label">Due date</div>
             <input
@@ -631,8 +692,8 @@ function TaskRowMetaColumns({
               type="button"
               className="linkish-btn"
               onClick={() => {
-                onDueChange(t.id, null)
-                setPop(null)
+                onDueChange(t.id, null);
+                setPop(null);
               }}
             >
               Clear due date
@@ -641,9 +702,10 @@ function TaskRowMetaColumns({
         ) : null}
       </td>
       <td
-        style={{ verticalAlign: 'middle', position: 'relative' }}
+        style={{ verticalAlign: "middle", position: "relative" }}
         data-popover-root
-        onClick={(e) => e.stopPropagation()}
+        onClick={stopProp}
+        onKeyDown={stopProp}
       >
         <button
           type="button"
@@ -651,23 +713,23 @@ function TaskRowMetaColumns({
           data-p={t.priority}
           onClick={() =>
             setPop(
-              pop?.k === 'prio' && pop.taskId === t.id
+              pop?.k === "prio" && pop.taskId === t.id
                 ? null
-                : { k: 'prio', taskId: t.id },
+                : { k: "prio", taskId: t.id },
             )
           }
         >
           {t.priority}
         </button>
-        {pop?.k === 'prio' && pop.taskId === t.id ? (
+        {pop?.k === "prio" && pop.taskId === t.id ? (
           <div className="inline-popover" data-popover-root>
             {prios.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => {
-                  onPriorityChange(t.id, p)
-                  setPop(null)
+                  onPriorityChange(t.id, p);
+                  setPop(null);
                 }}
               >
                 {p}
@@ -676,29 +738,32 @@ function TaskRowMetaColumns({
           </div>
         ) : null}
       </td>
-      <td style={{ verticalAlign: 'middle', position: 'relative' }} data-popover-root>
+      <td
+        style={{ verticalAlign: "middle", position: "relative" }}
+        data-popover-root
+      >
         <button
           type="button"
           className="icon-btn row-more-btn"
           aria-label="Task actions"
           onClick={(e) => {
-            e.stopPropagation()
+            e.stopPropagation();
             setPop(
-              pop?.k === 'taskmenu' && pop.taskId === t.id
+              pop?.k === "taskmenu" && pop.taskId === t.id
                 ? null
-                : { k: 'taskmenu', taskId: t.id },
-            )
+                : { k: "taskmenu", taskId: t.id },
+            );
           }}
         >
           ···
         </button>
-        {pop?.k === 'taskmenu' && pop.taskId === t.id ? (
+        {pop?.k === "taskmenu" && pop.taskId === t.id ? (
           <div className="inline-popover" data-popover-root>
             <button
               type="button"
               onClick={() => {
-                setPop(null)
-                onTaskClick(t)
+                setPop(null);
+                onTaskClick(t);
               }}
             >
               Open details
@@ -708,8 +773,8 @@ function TaskRowMetaColumns({
                 type="button"
                 className="task-menu-with-icon"
                 onClick={() => {
-                  setPop(null)
-                  onOpenSubtask()
+                  setPop(null);
+                  onOpenSubtask();
                 }}
               >
                 <IconPlus width={14} height={14} />
@@ -720,8 +785,8 @@ function TaskRowMetaColumns({
               type="button"
               className="danger-option"
               onClick={() => {
-                setPop(null)
-                void onDeleteTask(t.id)
+                setPop(null);
+                void onDeleteTask(t.id);
               }}
             >
               Delete task…
@@ -730,7 +795,7 @@ function TaskRowMetaColumns({
         ) : null}
       </td>
     </>
-  )
+  );
 }
 
 function TaskRow({
@@ -752,33 +817,41 @@ function TaskRow({
   onOpenSubtask,
   sort,
   subtaskComposerOpen,
+  statuses,
 }: {
-  task: TaskDoc
-  subtasks: TaskDoc[]
-  uid: string
-  multiSelectMode: boolean
-  selectedIds: Set<string>
-  pop: Pop
-  setPop: (p: Pop) => void
-  onToggleSelect: (taskId: string) => void
-  onTaskClick: (t: TaskDoc) => void
-  onToggleComplete: (t: TaskDoc) => void
-  onAssign: (taskId: string, assigneeId: string | null) => void
-  onStartChange: (taskId: string, ymd: string | null) => void
-  onDueChange: (taskId: string, ymd: string | null) => void
-  onPriorityChange: (taskId: string, priority: TaskDoc['priority']) => void
-  onDeleteTask: (taskId: string) => void
-  onOpenSubtask: () => void
-  sort: SortMode
-  subtaskComposerOpen: boolean
+  task: TaskDoc;
+  subtasks: TaskDoc[];
+  uid: string;
+  multiSelectMode: boolean;
+  selectedIds: Set<string>;
+  pop: Pop;
+  setPop: (p: Pop) => void;
+  onToggleSelect: (taskId: string) => void;
+  onTaskClick: (t: TaskDoc) => void;
+  onToggleComplete: (t: TaskDoc) => void;
+  onAssign: (taskId: string, assigneeId: string | null) => void;
+  onStartChange: (taskId: string, ymd: string | null) => void;
+  onDueChange: (taskId: string, ymd: string | null) => void;
+  onPriorityChange: (taskId: string, priority: TaskDoc["priority"]) => void;
+  onDeleteTask: (taskId: string) => void;
+  onOpenSubtask: () => void;
+  sort: SortMode;
+  subtaskComposerOpen: boolean;
+  statuses: StatusDoc[];
 }) {
-  const orderedSubtasks = sortTasks(subtasks, sort)
+  const orderedSubtasks = sortTasks(subtasks, sort);
+
+  const handleTaskKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      onTaskClick(t);
+    }
+  };
 
   return (
     <>
       <tr className="task-row">
         {multiSelectMode ? (
-          <td style={{ verticalAlign: 'middle' }}>
+          <td style={{ verticalAlign: "middle" }}>
             <input
               type="checkbox"
               className="select-checkbox"
@@ -789,19 +862,23 @@ function TaskRow({
             />
           </td>
         ) : null}
-        <td style={{ verticalAlign: 'middle' }}>
+        <td style={{ verticalAlign: "middle" }}>
           <button
             type="button"
             className="checkbox todo-complete-btn"
-            data-done={t.completed ? 'true' : 'false'}
-            title={t.completed ? 'Mark incomplete' : 'Mark complete'}
+            data-done={t.completed ? "true" : "false"}
+            title={t.completed ? "Mark incomplete" : "Mark complete"}
             onClick={(e) => {
-              e.stopPropagation()
-              onToggleComplete(t)
+              e.stopPropagation();
+              onToggleComplete(t);
             }}
           />
         </td>
-        <td onClick={() => onTaskClick(t)} style={{ cursor: 'pointer' }}>
+        <td
+          onClick={() => onTaskClick(t)}
+          onKeyDown={handleTaskKeyDown}
+          style={{ cursor: "pointer" }}
+        >
           <span style={{ fontWeight: 600 }}>{t.title}</span>
         </td>
         <TaskRowMetaColumns
@@ -820,15 +897,21 @@ function TaskRow({
           onDeleteTask={onDeleteTask}
           onTaskClick={onTaskClick}
           onOpenSubtask={onOpenSubtask}
+          statuses={statuses}
         />
       </tr>
       {orderedSubtasks.map((st, si) => {
         const isLastSubInTree =
-          si === orderedSubtasks.length - 1 && !subtaskComposerOpen
+          si === orderedSubtasks.length - 1 && !subtaskComposerOpen;
+        const handleSubKeyDown = (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            onTaskClick(st);
+          }
+        };
         return (
           <tr key={st.id} className="task-row task-row-sub">
             {multiSelectMode ? (
-              <td style={{ verticalAlign: 'middle' }}>
+              <td style={{ verticalAlign: "middle" }}>
                 <input
                   type="checkbox"
                   className="select-checkbox"
@@ -838,24 +921,25 @@ function TaskRow({
                 />
               </td>
             ) : null}
-            <td style={{ verticalAlign: 'middle' }}>
+            <td style={{ verticalAlign: "middle" }}>
               <button
                 type="button"
                 className="checkbox todo-complete-btn"
-                data-done={st.completed ? 'true' : 'false'}
+                data-done={st.completed ? "true" : "false"}
                 onClick={(e) => {
-                  e.stopPropagation()
-                  onToggleComplete(st)
+                  e.stopPropagation();
+                  onToggleComplete(st);
                 }}
               />
             </td>
             <td
               className="subtask-task-cell"
               onClick={() => onTaskClick(st)}
-              style={{ cursor: 'pointer' }}
+              onKeyDown={handleSubKeyDown}
+              style={{ cursor: "pointer" }}
             >
               <div
-                className={`task-tree-line ${isLastSubInTree ? 'task-tree-line--end' : 'task-tree-line--cont'}`}
+                className={`task-tree-line ${isLastSubInTree ? "task-tree-line--end" : "task-tree-line--cont"}`}
               >
                 <span className="task-tree-line__guide" aria-hidden />
                 <span className="task-tree-line__text">{st.title}</span>
@@ -874,10 +958,11 @@ function TaskRow({
               onDeleteTask={onDeleteTask}
               onTaskClick={onTaskClick}
               onOpenSubtask={onOpenSubtask}
+              statuses={statuses}
             />
           </tr>
-        )
+        );
       })}
     </>
-  )
+  );
 }

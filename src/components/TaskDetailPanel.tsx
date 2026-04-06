@@ -15,11 +15,12 @@ import {
   deleteTaskAttachment,
   subscribeAttachments,
   subscribeComments,
+  subscribeStatuses,
   updateTask,
   updateTaskDescriptionWithImageCleanup,
 } from '../services/db'
 import { uploadTaskFile, uploadTaskImageBlob } from '../services/storage'
-import type { AttachmentMeta, CommentDoc, TaskDoc } from '../types/models'
+import type { AttachmentMeta, CommentDoc, StatusDoc, TaskDoc } from '../types/models'
 import { fmtDateFull, tsToDate } from '../utils/format'
 import {
   firstImageFromClipboard,
@@ -70,6 +71,7 @@ export function TaskDetailPanel({
   )
   const [comments, setComments] = useState<CommentDoc[]>([])
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
+  const [statuses, setStatuses] = useState<StatusDoc[]>([])
   const [commentText, setCommentText] = useState('')
   const [tagDraft, setTagDraft] = useState('')
   const [imageUploadBusy, setImageUploadBusy] = useState<'idle' | 'desc' | 'comment'>(
@@ -87,32 +89,33 @@ export function TaskDetailPanel({
       return
     }
     lastCommittedDescription.current = task.description
-  }, [task?.id])
+  }, [task?.id, task?.description])
 
   useEffect(() => {
     if (!task) return
     const u = subscribeComments(uid, projectId, task.id, setComments)
     const v = subscribeAttachments(uid, projectId, task.id, setAttachments)
+    const w = subscribeStatuses(uid, setStatuses)
     return () => {
       u()
       v()
+      w()
     }
   }, [uid, projectId, task])
 
+  useEffect(() => {
+    if (!task?.parentTaskId) return
+    setTab((cur) => (cur === 'subtasks' ? 'details' : cur))
+  }, [task?.id, task?.parentTaskId])
+
   const subtasks = useMemo(
     () => allTasks.filter((t) => t.parentTaskId === task?.id),
-    [allTasks, task],
+    [allTasks, task?.id],
   )
 
   if (!task) return null
-
   const t = task
   const isSubtask = Boolean(t.parentTaskId)
-
-  useEffect(() => {
-    if (!t.parentTaskId) return
-    setTab((cur) => (cur === 'subtasks' ? 'details' : cur))
-  }, [t.id, t.parentTaskId])
 
   async function savePatch(patch: Partial<TaskDoc>) {
     await updateTask(uid, projectId, t.id, patch)
@@ -142,12 +145,14 @@ export function TaskDetailPanel({
             className="checkbox"
             data-done={t.completed ? 'true' : 'false'}
             title="Mark complete"
-            onClick={() =>
+            onClick={() => {
+              const comp = statuses.find((s) => s.isCompleted)
+              const def = statuses.find((s) => s.isDefault)
               void savePatch({
                 completed: !t.completed,
-                status: !t.completed ? 'completed' : 'not_started',
+                statusId: !t.completed ? (comp?.id ?? null) : (def?.id ?? null),
               })
-            }
+            }}
           />
           <input
             className="input"
@@ -278,15 +283,22 @@ export function TaskDetailPanel({
                   <div className="field-label">Status</div>
                   <select
                     className="select"
-                    value={t.status}
-                    onChange={(e) =>
-                      void savePatch({ status: e.target.value as TaskDoc['status'] })
-                    }
+                    value={t.statusId ?? ''}
+                    onChange={(e) => {
+                      const sid = e.target.value || null
+                      const s = statuses.find((x) => x.id === sid)
+                      void savePatch({
+                        statusId: sid,
+                        completed: s?.isCompleted ?? false,
+                      })
+                    }}
                   >
-                    <option value="not_started">Not started</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="blocked">Blocked</option>
+                    <option value="">No status</option>
+                    {statuses.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
