@@ -82,13 +82,16 @@ export function TaskDetailPanel({
   /** Last description persisted (to compute orphaned images vs edits). */
   const lastCommittedDescription = useRef('')
 
+  const taskIdForDescRef = task?.id
+  const taskDescriptionForDescRef = task?.description ?? ''
+
   useEffect(() => {
-    if (!task) {
+    if (taskIdForDescRef == null) {
       lastCommittedDescription.current = ''
       return
     }
-    lastCommittedDescription.current = task.description
-  }, [task?.id, task?.description])
+    lastCommittedDescription.current = taskDescriptionForDescRef
+  }, [taskIdForDescRef, taskDescriptionForDescRef])
 
   useEffect(() => {
     if (!task) return
@@ -137,16 +140,16 @@ export function TaskDetailPanel({
     <>
       <button
         type="button"
-        className="fixed inset-0 z-[90] cursor-default border-none bg-black/45 p-0"
+        className="fixed inset-0 z-90 cursor-default border-none bg-black/45 p-0"
         onClick={onClose}
         aria-label="Close"
       />
-      <aside className="fixed right-0 top-0 z-[100] flex h-full w-full max-w-[520px] flex-col border-l border-border bg-raised shadow-panel">
+      <aside className="fixed right-0 top-0 z-100 flex h-full w-full max-w-[520px] flex-col border-l border-border bg-raised shadow-panel">
         <div className="flex items-start gap-2.5 border-b border-border-subtle px-[18px] py-4">
           <label className="sr-only">Completed</label>
           <button
             type="button"
-            className="size-4 shrink-0 rounded border-[1.5px] border-[#6f7177] shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
+            className="size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
             data-done={t.completed ? 'true' : 'false'}
             title="Mark complete"
             onClick={() => {

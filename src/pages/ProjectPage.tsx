@@ -533,7 +533,7 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'filter' ? (
             <div
-              className="absolute right-[120px] top-14 z-50 mt-1.5 min-w-[260px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
+              className="absolute right-[120px] top-14 z-50 mt-1.5 min-w-sidebar rounded-modal border border-border bg-raised p-1.5 shadow-popover"
             >
               <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
                 Status
@@ -660,7 +660,7 @@ export function ProjectPage() {
           </button>
           <button
             type="button"
-            className="rounded-pill border border-[rgba(196,76,92,0.5)] bg-raised px-3 py-1.5 text-xs font-semibold text-[#f0a8b3] transition-colors hover:bg-[rgba(196,76,92,0.15)]"
+            className="rounded-pill border border-[rgba(196,76,92,0.5)] bg-raised px-3 py-1.5 text-xs font-semibold text-soft-danger transition-colors hover:bg-[rgba(196,76,92,0.15)]"
             onClick={() => void runBulkDelete()}
           >
             Delete…

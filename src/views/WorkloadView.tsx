@@ -19,7 +19,7 @@ export function WorkloadView({
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3.5 px-7 pb-10">
-      <div className="col-span-full rounded-[10px] border border-border-subtle bg-board p-4">
+      <div className="col-span-full rounded-modal border border-border-subtle bg-board p-4">
         <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
           Workload by assignee
         </h3>

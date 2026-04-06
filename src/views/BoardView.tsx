@@ -79,7 +79,7 @@ export function BoardView({
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <div
-            className="w-[260px] cursor-grabbing rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold"
+            className="w-sidebar cursor-grabbing rounded-lg border border-border-subtle bg-raised px-2.5 py-2.5 text-[13px] font-semibold"
           >
             {activeTask.title}
           </div>
@@ -103,7 +103,7 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id: section.id });
   return (
     <div
-      className="w-[280px] shrink-0 rounded-[10px] border border-border-subtle bg-board p-2.5 data-[over=true]:outline data-[over=true]:outline-2 data-[over=true]:outline-dashed data-[over=true]:outline-share"
+      className="w-[280px] shrink-0 rounded-modal border border-border-subtle bg-board p-2.5 data-[over=true]:outline data-[over=true]:outline-dashed data-[over=true]:outline-share"
       ref={setNodeRef}
       data-over={isOver ? "true" : "false"}
     >

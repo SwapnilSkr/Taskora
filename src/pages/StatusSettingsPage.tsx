@@ -114,7 +114,7 @@ export function StatusSettingsPage() {
           >
             <div className="relative size-8 shrink-0 overflow-hidden rounded-card border border-border-subtle transition-transform active:scale-95">
               <input
-                className="absolute -left-2.5 -top-2.5 h-[52px] w-[52px] cursor-pointer border-none bg-transparent p-0"
+                className="absolute -left-2.5 -top-2.5 h-header w-header cursor-pointer border-none bg-transparent p-0"
                 type="color"
                 value={s.color}
                 onChange={(e) => updateStatus(uid, s.id, { color: e.target.value })}
@@ -134,7 +134,7 @@ export function StatusSettingsPage() {
               <div className="mt-2.5 flex gap-2">
                 <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover-surface hover:text-fg">
                   <input
-                    className="size-3.5 cursor-pointer rounded border-[1.5px] border-[#6f7177] accent-share"
+                    className="size-3.5 cursor-pointer rounded border-[1.5px] border-placeholder accent-share"
                     type="checkbox"
                     checked={s.isDefault}
                     onChange={() => onToggleDefault(s)}
@@ -143,7 +143,7 @@ export function StatusSettingsPage() {
                 </label>
                 <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover-surface hover:text-fg">
                   <input
-                    className="size-3.5 cursor-pointer rounded border-[1.5px] border-[#6f7177] accent-share"
+                    className="size-3.5 cursor-pointer rounded border-[1.5px] border-placeholder accent-share"
                     type="checkbox"
                     checked={s.isCompleted}
                     onChange={() => onToggleCompleted(s)}

@@ -79,7 +79,7 @@ export function GanttView({
         Drag-friendly schedule: every task gets a bar from start/due dates, or from created date if unset.
         Click a bar or title to edit. Orange line is today.
       </div>
-      <div className="mx-7 overflow-x-auto rounded-[10px] border border-border-subtle bg-gantt-grid-bg">
+      <div className="mx-7 overflow-x-auto rounded-modal border border-border-subtle bg-gantt-grid-bg">
         <div className="min-w-[720px]">
           <div
             className="grid border-b border-border-subtle bg-[#1a1b1e]"
@@ -138,7 +138,7 @@ export function GanttView({
                   }}
                 >
                   <div
-                    className="pointer-events-none absolute bottom-0 top-0 z-[2] w-0.5 bg-[rgba(224,109,94,0.85)]"
+                    className="pointer-events-none absolute bottom-0 top-0 z-2 w-0.5 bg-[rgba(224,109,94,0.85)]"
                     style={{
                       left: `calc(${todayOffset * pctPerDay}% + ${pctPerDay / 2}%)`,
                     }}
@@ -146,7 +146,7 @@ export function GanttView({
                   <div
                     role="button"
                     tabIndex={0}
-                    className="absolute top-[5px] h-[22px] min-w-2 cursor-pointer rounded-md bg-gradient-to-r from-share to-project opacity-90 transition-[opacity,filter] hover:opacity-100 hover:brightness-110"
+                    className="absolute top-[5px] h-[22px] min-w-2 cursor-pointer rounded-md bg-linear-to-r from-share to-project opacity-90 transition-[opacity,filter] hover:opacity-100 hover:brightness-110"
                     style={{
                       left: `${offset * pctPerDay}%`,
                       width: `${len * pctPerDay}%`,

@@ -113,14 +113,14 @@ export function CommandPalette({ open, onClose }: Props) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[200] grid place-items-center p-6" role="dialog" aria-modal="true" aria-label="Search">
+    <div className="fixed inset-0 z-200 grid place-items-center p-6" role="dialog" aria-modal="true" aria-label="Search">
       <button
         type="button"
-        className="fixed inset-0 z-[90] cursor-default border-none bg-black/45 p-0"
+        className="fixed inset-0 z-90 cursor-default border-none bg-black/45 p-0"
         aria-label="Close"
         onClick={resetAndClose}
       />
-      <div className="relative z-[100] w-full max-w-[720px] overflow-hidden rounded-[10px] border border-border bg-raised shadow-popover">
+      <div className="relative z-100 w-full max-w-[720px] overflow-hidden rounded-modal border border-border bg-raised shadow-popover">
         <div className="flex items-center gap-2.5 border-b border-border-subtle px-4 py-3.5">
           <IconSearch width={18} height={18} />
           <input

@@ -52,7 +52,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           <IconHelp />
         </button>
         <div
-          className="grid size-7 place-items-center rounded-pill bg-gradient-to-br from-[#5b6cfb] to-[#9b6dff] text-[11px] font-bold text-white"
+          className="grid size-7 place-items-center rounded-pill bg-linear-to-br from-[#5b6cfb] to-[#9b6dff] text-[11px] font-bold text-white"
           title={user?.email ?? ''}
         >
           {label}

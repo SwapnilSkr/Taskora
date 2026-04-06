@@ -21,7 +21,7 @@ export function OverviewView({
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3.5 px-7 pb-10">
-      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+      <div className="rounded-modal border border-border-subtle bg-board p-4">
         <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
           Project health
         </h3>
@@ -32,7 +32,7 @@ export function OverviewView({
           {done} of {roots.length} top-level tasks complete
         </div>
       </div>
-      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+      <div className="rounded-modal border border-border-subtle bg-board p-4">
         <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
           Sections
         </h3>
@@ -41,14 +41,14 @@ export function OverviewView({
           Structured like Asana list sections
         </div>
       </div>
-      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+      <div className="rounded-modal border border-border-subtle bg-board p-4">
         <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
           At risk
         </h3>
         <div className="text-[28px] font-bold tracking-tight">{overdue}</div>
         <div className="mt-1.5 text-[13px] text-muted">Overdue incomplete tasks</div>
       </div>
-      <div className="rounded-[10px] border border-border-subtle bg-board p-4">
+      <div className="rounded-modal border border-border-subtle bg-board p-4">
         <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
           Description
         </h3>

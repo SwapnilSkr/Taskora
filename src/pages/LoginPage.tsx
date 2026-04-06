@@ -58,7 +58,7 @@ export function LoginPage() {
 
   return (
     <div className="grid min-h-screen place-items-center bg-[radial-gradient(1200px_600px_at_20%_0%,var(--color-login-gradient-start)_0%,var(--color-app)_55%)] p-6">
-      <div className="w-full max-w-[420px] rounded-[14px] border border-border bg-[rgba(37,39,40,0.92)] p-7 shadow-popover backdrop-blur-md">
+      <div className="w-full max-w-[420px] rounded-login border border-border bg-[rgba(37,39,40,0.92)] p-7 shadow-popover backdrop-blur-md">
         <h1 className="m-0 mb-1.5 text-[22px] font-bold tracking-tight">
           Welcome to Taskora
         </h1>
@@ -88,7 +88,7 @@ export function LoginPage() {
         </div>
         <form onSubmit={(e) => void onSubmit(e)}>
           {mode === 'up' ? (
-            <div className={`${fieldLabel} !mt-0`}>Display name</div>
+            <div className={`${fieldLabel} mt-0!`}>Display name</div>
           ) : null}
           {mode === 'up' ? (
             <input

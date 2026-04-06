@@ -97,7 +97,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {children}
       {active ? (
         <div
-          className="pointer-events-none fixed inset-0 z-[500] grid place-items-center p-6"
+          className="pointer-events-none fixed inset-0 z-500 grid place-items-center p-6"
           role="presentation"
         >
           <button
@@ -112,7 +112,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
             }}
           />
           <div
-            className="pointer-events-auto relative z-[1] max-h-[min(80vh,560px)] w-full max-w-[420px] overflow-auto rounded-xl border border-border bg-raised p-[22px] pb-[18px] shadow-popover"
+            className="pointer-events-auto relative z-1 max-h-[min(80vh,560px)] w-full max-w-[420px] overflow-auto rounded-xl border border-border bg-raised p-[22px] pb-[18px] shadow-popover"
             role="dialog"
             aria-modal="true"
             aria-labelledby="app-modal-title"
