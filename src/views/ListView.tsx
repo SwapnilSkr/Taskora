@@ -237,7 +237,7 @@ export function ListView({
                     <span className="text-[13px] font-bold">{s.name}</span>
                     <button
                       type="button"
-                      className="rounded-pill border border-transparent px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+                      className="rounded-pill border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                       onClick={() => onAddTask(s.id)}
                     >
                       + Add task
@@ -245,7 +245,7 @@ export function ListView({
                     <div className="relative inline-flex items-center" data-popover-root>
                       <button
                         type="button"
-                        className="grid place-items-center rounded-md px-1.5 py-1 text-muted transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
+                        className="grid place-items-center rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
                         aria-label="Section options"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -356,7 +356,7 @@ export function ListView({
                           />
                           <button
                             type="button"
-                            className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+                            className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                             onClick={() => setInlineSub(null)}
                           >
                             Cancel
@@ -465,7 +465,7 @@ export function ListView({
                           />
                           <button
                             type="button"
-                            className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+                            className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
                             onClick={() => setInlineSub(null)}
                           >
                             Cancel
@@ -492,60 +492,60 @@ export function ListView({
           <tr>
             {multiSelectMode ? (
               <th
-                className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+                className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
                 style={{ width: 36 }}
                 aria-label="Select for bulk"
               />
             ) : null}
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: 44 }}
               title="Done"
             >
               ✓
             </th>
-            <th className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted">
+            <th className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Task
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: "11%" }}
             >
               Status
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: "10%" }}
               title="Add subtasks"
             >
               Subtasks
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: "14%" }}
             >
               Assignee
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: "11%" }}
             >
               Start
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: "11%" }}
             >
               Due
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: "10%" }}
             >
               Priority
             </th>
             <th
-              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted"
+              className="sticky top-0 z-1 border-b border-border bg-app px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               style={{ width: 44 }}
               aria-label="Actions"
             />
@@ -612,7 +612,7 @@ function TaskRowMetaColumns({
           <button
             type="button"
             className={clsx(
-              "subtask-quick-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+              "subtask-quick-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
               subtaskQuickAdd.count > 0 && "is-set",
             )}
             title={
@@ -630,7 +630,7 @@ function TaskRowMetaColumns({
         </td>
       ) : (
         <td
-          className="select-none text-center text-[13px] text-muted"
+          className="select-none text-center text-[13px] text-muted-foreground"
           style={{ verticalAlign: "middle" }}
           title="Nested subtasks are not supported. Add subtasks from the parent task in the list."
         >
@@ -648,7 +648,7 @@ function TaskRowMetaColumns({
         <button
           type="button"
           className={clsx(
-            "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+            "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
             t.assigneeId && "is-set",
           )}
           onClick={() =>
@@ -699,7 +699,7 @@ function TaskRowMetaColumns({
         <button
           type="button"
           className={clsx(
-            "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+            "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
             start && "is-set",
           )}
           onClick={() =>
@@ -718,7 +718,7 @@ function TaskRowMetaColumns({
             className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[220px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
             data-popover-root
           >
-            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Start date
             </div>
             <input
@@ -749,7 +749,7 @@ function TaskRowMetaColumns({
         <button
           type="button"
           className={clsx(
-            "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+            "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
             due && "is-set",
           )}
           onClick={() =>
@@ -776,7 +776,7 @@ function TaskRowMetaColumns({
             className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[220px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
             data-popover-root
           >
-            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+            <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Due date
             </div>
             <input
@@ -845,7 +845,7 @@ function TaskRowMetaColumns({
       >
         <button
           type="button"
-          className="grid size-8 place-items-center rounded-card font-black tracking-wide text-muted transition-colors hover:bg-hover-surface hover:text-fg"
+          className="grid size-8 place-items-center rounded-card font-black tracking-wide text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg"
           aria-label="Task actions"
           onClick={(e) => {
             e.stopPropagation();

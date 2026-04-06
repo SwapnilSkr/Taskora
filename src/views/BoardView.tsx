@@ -107,7 +107,7 @@ function Column({
       ref={setNodeRef}
       data-over={isOver ? "true" : "false"}
     >
-      <h3 className="mb-2.5 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+      <h3 className="mb-2.5 mt-0 text-xs font-bold uppercase tracking-wider text-muted-foreground">
         {section.name}
       </h3>
       {tasks.map((t) => (

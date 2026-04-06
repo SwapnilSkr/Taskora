@@ -45,6 +45,7 @@ import {
 import { OverviewView } from '../views/OverviewView'
 import { TimelineViewTimeline } from '../views/TimelineView'
 import { WorkloadView } from '../views/WorkloadView'
+import { Button } from '@/components/ui/button'
 
 const VIEWS: { id: ProjectView; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -172,7 +173,7 @@ export function ProjectPage() {
 
   if (!projectId || !uid || !project) {
     return (
-      <div className="p-7 text-muted">
+      <div className="p-7 text-muted-foreground">
         Loading project…
       </div>
     )
@@ -345,7 +346,7 @@ export function ProjectPage() {
     <>
       <div className="px-7 pb-0 pt-5">
         <div className="mb-1 flex items-center gap-2.5">
-          <IconList className="size-5 text-muted hover:text-fg" />
+          <IconList className="size-5 text-muted-foreground hover:text-foreground" />
           <span
             className="h-3 w-3 shrink-0 rounded-[3px]"
             style={{ background: project.color }}
@@ -355,7 +356,7 @@ export function ProjectPage() {
           </h1>
           <button
             type="button"
-            className="text-muted hover:text-fg [&_svg]:size-5"
+            className="text-muted-foreground hover:text-foreground [&_svg]:size-5"
             title="Star project"
             onClick={() =>
               void updateProject(uid, pid, { starred: !project.starred })
@@ -370,19 +371,19 @@ export function ProjectPage() {
           </button>
           <button
             type="button"
-            className="text-muted hover:text-fg [&_svg]:size-5"
+            className="text-muted-foreground hover:text-foreground [&_svg]:size-5"
             title="Project menu"
           >
             <IconChevronDown />
           </button>
         </div>
 
-        <div className="mt-3 flex items-center gap-1 border-b border-border-subtle">
+        <div className="mt-3 flex items-center gap-1 border-b border-border">
           {VIEWS.map((v) => (
             <button
               key={v.id}
               type="button"
-              className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted transition-colors hover:text-fg data-[active=true]:border-white data-[active=true]:text-fg"
+              className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground data-[active=true]:border-white data-[active=true]:text-foreground"
               data-active={activeView === v.id ? 'true' : 'false'}
               onClick={() => goView(v.id)}
             >
@@ -391,7 +392,7 @@ export function ProjectPage() {
           ))}
           <button
             type="button"
-            className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted transition-colors hover:text-fg"
+            className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
             title="More views"
             onClick={() =>
               void alert({
@@ -408,9 +409,10 @@ export function ProjectPage() {
 
       {activeView === 'list' || activeView === 'board' ? (
         <div className="relative flex flex-wrap items-center gap-2 px-7 py-3.5" ref={popRef}>
-          <button
+          <Button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-raised px-3 py-2 text-[13px] font-semibold transition-colors hover:bg-hover-surface"
+            variant="outline"
+            className="rounded-full text-[13px] font-semibold"
             onClick={() => {
               const s = sections[0]
               if (s) void onAddTask(s.id)
@@ -419,13 +421,13 @@ export function ProjectPage() {
             <IconPlus width={16} height={16} />
             Add task
             <IconChevronDown width={14} height={14} />
-          </button>
+          </Button>
           <div className="flex-1" />
           <div className="flex items-center gap-1.5">
             {activeView === 'list' ? (
               <button
                 type="button"
-                className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+                className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-foreground"
                 data-open={multiSelectMode ? 'true' : 'false'}
                 onClick={() => {
                   setMultiSelectMode((v) => {
@@ -439,7 +441,7 @@ export function ProjectPage() {
             ) : null}
             <button
               type="button"
-              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-foreground"
               data-open={filterOpen === 'filter' ? 'true' : 'false'}
               onClick={() =>
                 setFilterOpen((x) => (x === 'filter' ? null : 'filter'))
@@ -449,7 +451,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-foreground"
               data-open={filterOpen === 'sort' ? 'true' : 'false'}
               onClick={() => setFilterOpen((x) => (x === 'sort' ? null : 'sort'))}
             >
@@ -457,7 +459,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-foreground"
               data-open={filterOpen === 'group' ? 'true' : 'false'}
               onClick={() => setFilterOpen((x) => (x === 'group' ? null : 'group'))}
             >
@@ -465,7 +467,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+              className="rounded-pill border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-foreground"
               data-open={filterOpen === 'options' ? 'true' : 'false'}
               onClick={() =>
                 setFilterOpen((x) => (x === 'options' ? null : 'options'))
@@ -475,7 +477,7 @@ export function ProjectPage() {
             </button>
             <button
               type="button"
-              className="grid size-8 place-items-center rounded-card text-muted transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
+              className="grid size-8 place-items-center rounded-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground [&_svg]:size-[18px]"
               title="Search (⌘K)"
               onClick={() =>
                 window.dispatchEvent(new Event('taskora:open-search'))
@@ -486,7 +488,7 @@ export function ProjectPage() {
           </div>
           {filterOpen === 'sort' ? (
             <div
-              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
+              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-lg border border-border bg-card p-1.5 shadow-md"
             >
               {(
                 [
@@ -499,7 +501,7 @@ export function ProjectPage() {
                 <button
                   key={id}
                   type="button"
-                  className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                  className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
                   onClick={() => setSort(id)}
                 >
                   {lab}
@@ -509,7 +511,7 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'group' ? (
             <div
-              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
+              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[220px] rounded-lg border border-border bg-card p-1.5 shadow-md"
             >
               {(
                 [
@@ -523,7 +525,7 @@ export function ProjectPage() {
                 <button
                   key={id}
                   type="button"
-                  className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                  className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
                   onClick={() => setGroup(id)}
                 >
                   {lab}
@@ -533,14 +535,14 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'filter' ? (
             <div
-              className="absolute right-[120px] top-14 z-50 mt-1.5 min-w-sidebar rounded-modal border border-border bg-raised p-1.5 shadow-popover"
+              className="absolute right-[120px] top-14 z-50 mt-1.5 min-w-sidebar rounded-lg border border-border bg-card p-1.5 shadow-md"
             >
-              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Status
               </div>
               <button
                 type="button"
-                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                 data-active={filterStatus === 'all' ? 'true' : 'false'}
                 onClick={() => setFilterStatus('all')}
               >
@@ -550,14 +552,14 @@ export function ProjectPage() {
                 <button
                   key={s.id}
                   type="button"
-                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                   data-active={filterStatus === s.id ? 'true' : 'false'}
                   onClick={() => setFilterStatus(s.id)}
                 >
                   {s.name}
                 </button>
               ))}
-              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Assignee
               </div>
               {(
@@ -570,19 +572,19 @@ export function ProjectPage() {
                 <button
                   key={id}
                   type="button"
-                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                   data-active={filterAssignee === id ? 'true' : 'false'}
                   onClick={() => setFilterAssignee(id)}
                 >
                   {lab}
                 </button>
               ))}
-              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+              <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Visibility
               </div>
               <button
                 type="button"
-                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-fg data-[active=true]:bg-hover-surface data-[active=true]:font-semibold"
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                 data-active={filterHideCompleted ? 'true' : 'false'}
                 onClick={() => setFilterHideCompleted((x) => !x)}
               >
@@ -593,11 +595,11 @@ export function ProjectPage() {
           ) : null}
           {filterOpen === 'options' ? (
             <div
-              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[240px] rounded-modal border border-border bg-raised p-1.5 shadow-popover"
+              className="absolute right-6 top-14 z-50 mt-1.5 min-w-[240px] rounded-lg border border-border bg-card p-1.5 shadow-md"
             >
               <button
                 type="button"
-                className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
                 onClick={() => {
                   setFilterOpen(null)
                   void alert({
@@ -611,7 +613,7 @@ export function ProjectPage() {
               </button>
               <button
                 type="button"
-                className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
                 onClick={() => {
                   setFilterOpen(null)
                   void alert({
@@ -628,51 +630,63 @@ export function ProjectPage() {
       ) : null}
 
       {activeView === 'list' && multiSelectMode && selectedIds.size > 0 ? (
-        <div className="mx-7 mb-3 flex flex-wrap items-center gap-2.5 rounded-modal border border-border bg-row-hover px-3.5 py-2.5 text-[13px]">
+        <div className="mx-7 mb-3 flex flex-wrap items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-[13px]">
           <span className="mr-1 font-bold">{selectedIds.size} selected</span>
-          <button
+          <Button
             type="button"
-            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs font-semibold"
             onClick={() => void runBulkComplete(true)}
           >
             Mark complete
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs font-semibold"
             onClick={() => void runBulkComplete(false)}
           >
             Mark incomplete
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs font-semibold"
             onClick={() => void runBulkAssign(true)}
           >
             Assign to me
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs font-semibold"
             onClick={() => void runBulkAssign(false)}
           >
             Unassign
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="rounded-pill border border-[rgba(196,76,92,0.5)] bg-raised px-3 py-1.5 text-xs font-semibold text-soft-danger transition-colors hover:bg-[rgba(196,76,92,0.15)]"
+            variant="destructive"
+            size="sm"
+            className="rounded-full text-xs font-semibold"
             onClick={() => void runBulkDelete()}
           >
             Delete…
-          </button>
+          </Button>
           <div className="flex-1" />
-          <button
+          <Button
             type="button"
-            className="rounded-pill border border-border bg-raised px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:bg-hover-surface"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs font-semibold"
             onClick={() => setSelectedIds(new Set())}
           >
             Clear selection
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -742,14 +756,15 @@ export function ProjectPage() {
         <WorkloadView tasks={filteredTasks} uid={uid} />
       ) : null}
 
-      <button
+      <Button
         type="button"
-        className="mx-7 mb-8 mt-[18px] inline-flex items-center gap-1.5 py-2 text-[13px] font-semibold text-muted transition-colors hover:text-fg"
+        variant="ghost"
+        className="text-muted-foreground mx-7 mb-8 mt-[18px] justify-start gap-1.5 text-[13px] font-semibold hover:text-foreground"
         onClick={() => void onAddSection()}
       >
         <IconPlus width={16} height={16} />
         Add section
-      </button>
+      </Button>
 
       {selected && taskForDetailPanel ? (
         <TaskDetailPanel

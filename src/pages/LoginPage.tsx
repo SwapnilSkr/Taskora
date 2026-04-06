@@ -1,6 +1,12 @@
 import { type FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '@/context/AuthContext'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 
 function GoogleMark() {
   return (
@@ -24,12 +30,6 @@ function GoogleMark() {
     </svg>
   )
 }
-
-const fieldLabel =
-  'mb-1.5 mt-3.5 text-[11px] font-bold uppercase tracking-wider text-muted first:mt-0'
-
-const input =
-  'w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]'
 
 export function LoginPage() {
   const { signInEmail, signUpEmail, signInGoogle } = useAuth()
@@ -57,92 +57,104 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-[radial-gradient(1200px_600px_at_20%_0%,var(--color-login-gradient-start)_0%,var(--color-app)_55%)] p-6">
-      <div className="w-full max-w-[420px] rounded-login border border-border bg-[rgba(37,39,40,0.92)] p-7 shadow-popover backdrop-blur-md">
-        <h1 className="m-0 mb-1.5 text-[22px] font-bold tracking-tight">
-          Welcome to Taskora
-        </h1>
-        <p className="mb-[18px] text-muted">
-          Pro-grade tasks, timelines, and workloads — anchored to your Firebase project.
-        </p>
-        <button
-          type="button"
-          className="mb-[18px] flex w-full items-center justify-center gap-2.5 rounded-pill border border-border bg-white px-3.5 py-2.5 text-[13px] font-semibold text-google-btn transition-colors hover:border-google-border-hover hover:bg-[#f8f9fa] disabled:cursor-not-allowed disabled:opacity-[0.65] [&_svg]:shrink-0"
-          disabled={busy}
-          onClick={() => {
-            setError(null)
-            setBusy(true)
-            void signInGoogle()
-              .then(() => nav('/home', { replace: true }))
-              .catch((err: unknown) =>
-                setError(err instanceof Error ? err.message : 'Google sign-in failed'),
-              )
-              .finally(() => setBusy(false))
-          }}
-        >
-          <GoogleMark />
-          Continue with Google
-        </button>
-        <div className="my-1 mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-muted before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
-          or email
-        </div>
-        <form onSubmit={(e) => void onSubmit(e)}>
-          {mode === 'up' ? (
-            <div className={`${fieldLabel} mt-0!`}>Display name</div>
-          ) : null}
-          {mode === 'up' ? (
-            <input
-              className={input}
-              placeholder="Ada Lovelace"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          ) : null}
-          <div className={fieldLabel}>Email</div>
-          <input
-            className={input}
-            type="email"
-            autoComplete="email"
-            placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <div className={fieldLabel}>Password</div>
-          <input
-            className={input}
-            type="password"
-            autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-          {error ? (
-            <div className="mt-2.5 text-[13px] text-[#ff9c9c]">{error}</div>
-          ) : null}
-          <div className="mt-3.5 flex gap-2.5">
-            <button
-              className="flex-1 rounded-pill bg-share px-3.5 py-2.5 font-bold text-white transition-colors hover:bg-share-hover disabled:opacity-60"
-              type="submit"
-              disabled={busy}
-            >
-              {mode === 'in' ? 'Sign in' : 'Create account'}
-            </button>
-            <button
-              className="flex-1 rounded-pill border border-border px-3.5 py-2.5 font-bold transition-colors hover:bg-hover-surface"
-              type="button"
-              onClick={() => {
-                setMode(mode === 'in' ? 'up' : 'in')
-                setError(null)
-              }}
-            >
-              {mode === 'in' ? 'Need an account?' : 'Have an account?'}
-            </button>
+    <div className="bg-background grid min-h-screen place-items-center bg-[radial-gradient(1200px_600px_at_20%_0%,var(--color-login-gradient-start)_0%,var(--color-app)_55%)] p-6">
+      <Card className="border-border w-full max-w-[420px] border bg-card/95 shadow-lg backdrop-blur-md">
+        <CardHeader className="space-y-1 pb-4">
+          <CardTitle className="text-[22px] font-bold tracking-tight">
+            Welcome to Taskora
+          </CardTitle>
+          <CardDescription className="text-[13px] leading-relaxed">
+            Pro-grade tasks, timelines, and workloads — anchored to your Firebase project.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="bg-background text-foreground h-11 w-full gap-2.5 border shadow-sm hover:bg-accent"
+            disabled={busy}
+            onClick={() => {
+              setError(null)
+              setBusy(true)
+              void signInGoogle()
+                .then(() => nav('/home', { replace: true }))
+                .catch((err: unknown) =>
+                  setError(err instanceof Error ? err.message : 'Google sign-in failed'),
+                )
+                .finally(() => setBusy(false))
+            }}
+          >
+            <GoogleMark />
+            Continue with Google
+          </Button>
+
+          <div className="text-muted-foreground flex items-center gap-3 text-xs font-semibold uppercase tracking-widest">
+            <Separator className="flex-1" />
+            or email
+            <Separator className="flex-1" />
           </div>
-        </form>
-      </div>
+
+          <form className="space-y-3" onSubmit={(e) => void onSubmit(e)}>
+            {mode === 'up' ? (
+              <div className="space-y-2">
+                <Label htmlFor="login-name">Display name</Label>
+                <Input
+                  id="login-name"
+                  placeholder="Ada Lovelace"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            {error ? (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="flex gap-2.5 pt-1">
+              <Button className="flex-1 font-bold" type="submit" disabled={busy}>
+                {mode === 'in' ? 'Sign in' : 'Create account'}
+              </Button>
+              <Button
+                className="flex-1 font-bold"
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setMode(mode === 'in' ? 'up' : 'in')
+                  setError(null)
+                }}
+              >
+                {mode === 'in' ? 'Need an account?' : 'Have an account?'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

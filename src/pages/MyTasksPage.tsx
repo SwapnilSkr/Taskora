@@ -21,13 +21,13 @@ export function MyTasksPage() {
   return (
     <div className="px-8 pb-12 pt-7">
       <h1 className="mb-2 mt-0 text-[26px] font-bold">My tasks</h1>
-      <p className="m-0 max-w-[720px] text-muted">
+      <p className="m-0 max-w-[720px] text-muted-foreground">
         Everything assigned to you across projects — similar to Asana &quot;My tasks&quot;.
       </p>
 
       <div className="mt-[18px] overflow-hidden rounded-modal border border-border-subtle">
         {mine.length === 0 ? (
-          <div className="p-[18px] text-muted">
+          <div className="p-[18px] text-muted-foreground">
             Assign tasks to yourself from the task pane to see them here.
           </div>
         ) : (
@@ -40,12 +40,12 @@ export function MyTasksPage() {
             >
               <div>
                 <div className="font-bold">{t.title}</div>
-                <div className="mt-1 text-xs text-muted">{project.name}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{project.name}</div>
               </div>
-              <div className="text-[13px] text-muted">
+              <div className="text-[13px] text-muted-foreground">
                 {fmtDate(tsToDate(t.dueDate))}
               </div>
-              <div className="text-xs text-muted">{t.completed ? 'Done' : 'Open'}</div>
+              <div className="text-xs text-muted-foreground">{t.completed ? 'Done' : 'Open'}</div>
             </button>
           ))
         )}

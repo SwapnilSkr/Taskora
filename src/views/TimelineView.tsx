@@ -18,12 +18,12 @@ export function TimelineViewTimeline({
 
   return (
     <div className="px-7 pb-10">
-      <div className="mb-3.5 text-[13px] text-muted">
+      <div className="mb-3.5 text-[13px] text-muted-foreground">
         Timeline surfaces upcoming milestones (tasks with due dates). Click a row to open details and adjust dates.
       </div>
       <div className="overflow-hidden rounded-modal border border-border-subtle">
         {withDue.length === 0 ? (
-          <div className="p-[18px] text-muted">
+          <div className="p-[18px] text-muted-foreground">
             Add due dates to tasks to populate this timeline — or open the Gantt tab to see inferred windows.
           </div>
         ) : (
@@ -40,10 +40,10 @@ export function TimelineViewTimeline({
                 <div>
                   <div className="font-semibold">{t.title}</div>
                   {t.completed ? (
-                    <div className="mt-1 text-[11px] text-muted">Completed</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">Completed</div>
                   ) : null}
                 </div>
-                <div className="text-muted">{sec}</div>
+                <div className="text-muted-foreground">{sec}</div>
                 <div className="tabular-nums">{due!.toDateString()}</div>
               </button>
             )

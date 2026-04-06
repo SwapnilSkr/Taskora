@@ -55,7 +55,7 @@ export function GanttView({
   const rows = buildRows(tasks)
   if (rows.length === 0) {
     return (
-      <div className="px-7 py-6 text-muted">
+      <div className="px-7 py-6 text-muted-foreground">
         No tasks in this project yet. Add tasks from the List tab.
       </div>
     )
@@ -75,7 +75,7 @@ export function GanttView({
 
   return (
     <div className="pb-10">
-      <div className="px-7 pb-3 text-[13px] text-muted">
+      <div className="px-7 pb-3 text-[13px] text-muted-foreground">
         Drag-friendly schedule: every task gets a bar from start/due dates, or from created date if unset.
         Click a bar or title to edit. Orange line is today.
       </div>
@@ -87,13 +87,13 @@ export function GanttView({
               gridTemplateColumns: `minmax(180px,220px) repeat(${days.length}, minmax(22px, 1fr))`,
             }}
           >
-            <div className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+            <div className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Task
             </div>
             {days.map((d, i) => (
               <div
                 key={i}
-                className="border-l border-border-subtle px-0.5 py-2.5 text-center text-[10px] font-bold text-muted"
+                className="border-l border-border-subtle px-0.5 py-2.5 text-center text-[10px] font-bold text-muted-foreground"
               >
                 {i % 3 === 0 || i === 0 || i === days.length - 1
                   ? format(d, 'd')
@@ -126,7 +126,7 @@ export function GanttView({
                     </button>
                   </div>
                   {inferred ? (
-                    <span className="text-[11px] font-medium text-muted">
+                    <span className="text-[11px] font-medium text-muted-foreground">
                       Estimated window · set dates in details
                     </span>
                   ) : null}

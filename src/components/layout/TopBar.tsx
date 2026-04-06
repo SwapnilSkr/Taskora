@@ -1,76 +1,70 @@
-import { useAuth } from '../../context/AuthContext'
-import { initials } from '../../utils/format'
 import {
-  IconArrowLeft,
-  IconArrowRight,
-  IconClock,
-  IconHelp,
-  IconSearch,
-  IconSliders,
-  IconUserPlus,
-} from '../icons'
+  ArrowLeft,
+  ArrowRight,
+  Clock,
+  CircleHelp,
+  Search,
+  SlidersHorizontal,
+  UserPlus,
+} from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { initials } from '@/utils/format'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Kbd } from '@/components/ui/kbd'
 
 type TopBarProps = {
   onOpenSearch: () => void
 }
-
-const iconBtn =
-  'grid size-8 place-items-center rounded-card text-muted transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]'
 
 export function TopBar({ onOpenSearch }: TopBarProps) {
   const { user } = useAuth()
   const label = initials(user?.displayName || user?.email || 'You')
 
   return (
-    <header className="sticky top-0 z-20 flex h-header shrink-0 items-center gap-3 border-b border-border-subtle bg-app py-0 pl-3 pr-4">
+    <header className="border-border bg-background sticky top-0 z-20 flex h-header shrink-0 items-center gap-3 border-b py-0 pl-3 pr-4">
       <div className="flex items-center gap-0.5">
-        <button type="button" className={iconBtn} title="Back">
-          <IconArrowLeft />
-        </button>
-        <button type="button" className={iconBtn} title="Forward">
-          <IconArrowRight />
-        </button>
-        <button type="button" className={iconBtn} title="History">
-          <IconClock />
-        </button>
+        <Button type="button" variant="ghost" size="icon" title="Back">
+          <ArrowLeft className="size-[18px]" />
+        </Button>
+        <Button type="button" variant="ghost" size="icon" title="Forward">
+          <ArrowRight className="size-[18px]" />
+        </Button>
+        <Button type="button" variant="ghost" size="icon" title="History">
+          <Clock className="size-[18px]" />
+        </Button>
       </div>
 
-      <button
+      <Button
         type="button"
-        className="mx-auto flex max-w-[560px] flex-1 cursor-pointer items-center gap-2.5 rounded-pill border border-border bg-raised px-3.5 py-2 text-[13px] text-placeholder transition-colors hover:border-[#4a4b50] [&_svg]:size-4 [&_svg]:shrink-0"
+        variant="outline"
+        className="text-muted-foreground mx-auto h-9 max-w-[560px] flex-1 justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-normal shadow-none"
         onClick={onOpenSearch}
       >
-        <IconSearch />
+        <Search className="size-4 shrink-0" />
         <span>Search Taskora</span>
-        <kbd className="ml-auto rounded border border-border bg-app px-1.5 py-0.5 font-sans text-[11px] text-muted">
+        <Kbd className="ml-auto rounded border px-1.5 py-0.5 font-sans text-[11px]">
           ⌘K
-        </kbd>
-      </button>
+        </Kbd>
+      </Button>
 
       <div className="ml-auto flex items-center gap-2">
-        <button type="button" className={iconBtn} title="Help">
-          <IconHelp />
-        </button>
-        <div
-          className="grid size-7 place-items-center rounded-pill bg-linear-to-br from-[#5b6cfb] to-[#9b6dff] text-[11px] font-bold text-white"
-          title={user?.email ?? ''}
-        >
-          {label}
-        </div>
-        <button
-          type="button"
-          className="flex items-center gap-1.5 rounded-pill bg-share px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-share-hover [&_svg]:size-4"
-        >
-          <IconUserPlus />
+        <Button type="button" variant="ghost" size="icon" title="Help">
+          <CircleHelp className="size-[18px]" />
+        </Button>
+        <Avatar className="size-7" title={user?.email ?? ''}>
+          <AvatarFallback className="bg-linear-to-br from-[#5b6cfb] to-[#9b6dff] text-[11px] font-bold text-white">
+            {label}
+          </AvatarFallback>
+        </Avatar>
+        <Button type="button" size="sm" className="rounded-full gap-1.5">
+          <UserPlus className="size-4" />
           Share
-        </button>
-        <button
-          type="button"
-          className="flex items-center gap-1.5 rounded-pill border border-border bg-transparent px-2.5 py-1.5 text-[13px] font-semibold text-fg transition-colors hover:bg-hover-surface [&_svg]:size-[18px]"
-        >
-          <IconSliders />
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5">
+          <SlidersHorizontal className="size-[18px]" />
           Customize
-        </button>
+        </Button>
       </div>
     </header>
   )

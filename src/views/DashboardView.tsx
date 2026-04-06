@@ -22,15 +22,15 @@ export function DashboardView({
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3.5 px-7 pb-10">
       <div className="rounded-modal border border-border-subtle bg-board p-4">
-        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Status mix
         </h3>
         {statuses.map((s) => {
           const v = statusCounts[s.id] || 0
           return (
-            <div key={s.id} className="mt-2 flex items-center gap-2 text-xs text-muted">
+            <div key={s.id} className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
               <span
-                className="w-[110px] text-[13px] capitalize text-muted"
+                className="w-[110px] text-[13px] capitalize text-muted-foreground"
               >
                 {s.name}
               </span>
@@ -49,10 +49,10 @@ export function DashboardView({
         })}
       </div>
       <div className="rounded-modal border border-border-subtle bg-board p-4">
-        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted">
+        <h3 className="mb-2 mt-0 text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Time tracking
         </h3>
-        <div className="text-sm text-muted">
+        <div className="text-sm text-muted-foreground">
           Estimated {totalEst} min · Logged {totalTracked} min
         </div>
         <div className="mt-3 h-2 flex-1 overflow-hidden rounded-pill bg-bar-track">
@@ -63,7 +63,7 @@ export function DashboardView({
             }}
           />
         </div>
-        <div className="mt-2 text-xs text-muted">
+        <div className="mt-2 text-xs text-muted-foreground">
           Modeled after Asana Advanced time tracking fields (estimate + actuals on each task).
         </div>
       </div>
