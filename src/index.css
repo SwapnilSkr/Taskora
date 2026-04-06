@@ -73,6 +73,10 @@
     color-scheme: dark;
   }
 
+  html {
+    @apply overflow-x-hidden;
+  }
+
   html,
   body {
     @apply m-0 h-full antialiased;

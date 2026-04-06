@@ -344,14 +344,14 @@ export function ProjectPage() {
 
   return (
     <>
-      <div className="px-7 pb-0 pt-5">
-        <div className="mb-1 flex items-center gap-2.5">
-          <IconList className="size-5 text-muted-foreground hover:text-foreground" />
+      <div className="min-w-0 px-7 pb-0 pt-5">
+        <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2.5">
+          <IconList className="size-5 shrink-0 text-muted-foreground hover:text-foreground" />
           <span
             className="h-3 w-3 shrink-0 rounded-[3px]"
             style={{ background: project.color }}
           />
-          <h1 className="m-0 text-[22px] font-semibold tracking-tight">
+          <h1 className="m-0 min-w-0 flex-1 truncate text-[22px] font-semibold tracking-tight">
             {project.name}
           </h1>
           <button
@@ -378,12 +378,12 @@ export function ProjectPage() {
           </button>
         </div>
 
-        <div className="mt-3 flex items-center gap-1 border-b border-border">
+        <div className="mt-3 flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border pb-px [-ms-overflow-style:auto] [scrollbar-width:thin]">
           {VIEWS.map((v) => (
             <button
               key={v.id}
               type="button"
-              className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground data-[active=true]:border-white data-[active=true]:text-foreground"
+              className="-mb-px shrink-0 border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground data-[active=true]:border-white data-[active=true]:text-foreground"
               data-active={activeView === v.id ? 'true' : 'false'}
               onClick={() => goView(v.id)}
             >
@@ -392,7 +392,7 @@ export function ProjectPage() {
           ))}
           <button
             type="button"
-            className="-mb-px border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            className="-mb-px shrink-0 border-b-2 border-transparent px-3 pb-3 pt-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
             title="More views"
             onClick={() =>
               void alert({
@@ -408,7 +408,10 @@ export function ProjectPage() {
       </div>
 
       {activeView === 'list' || activeView === 'board' ? (
-        <div className="relative flex flex-wrap items-center gap-2 px-7 py-3.5" ref={popRef}>
+        <div
+          className="relative flex min-w-0 flex-wrap items-center gap-2 px-7 py-3.5"
+          ref={popRef}
+        >
           <Button
             type="button"
             variant="outline"

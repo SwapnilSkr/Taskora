@@ -22,8 +22,8 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
   const label = initials(user?.displayName || user?.email || 'You')
 
   return (
-    <header className="border-border bg-background sticky top-0 z-20 flex h-header shrink-0 items-center gap-3 border-b py-0 pl-3 pr-4">
-      <div className="flex items-center gap-0.5">
+    <header className="border-border bg-background sticky top-0 z-20 flex h-header min-w-0 shrink-0 items-center gap-2 border-b py-0 pl-3 pr-4 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-0.5">
         <Button type="button" variant="ghost" size="icon" title="Back">
           <ArrowLeft className="size-[18px]" />
         </Button>
@@ -38,17 +38,17 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
       <Button
         type="button"
         variant="outline"
-        className="text-muted-foreground mx-auto h-9 max-w-[560px] flex-1 justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-normal shadow-none"
+        className="text-muted-foreground mx-auto h-9 min-w-0 max-w-[560px] flex-1 justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-normal shadow-none"
         onClick={onOpenSearch}
       >
         <Search className="size-4 shrink-0" />
-        <span>Search Taskora</span>
-        <Kbd className="ml-auto rounded border px-1.5 py-0.5 font-sans text-[11px]">
+        <span className="truncate">Search Taskora</span>
+        <Kbd className="ml-auto hidden shrink-0 rounded border px-1.5 py-0.5 font-sans text-[11px] sm:inline-flex">
           ⌘K
         </Kbd>
       </Button>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Button type="button" variant="ghost" size="icon" title="Help">
           <CircleHelp className="size-[18px]" />
         </Button>
@@ -57,13 +57,22 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
             {label}
           </AvatarFallback>
         </Avatar>
-        <Button type="button" size="sm" className="rounded-full gap-1.5">
+        <Button
+          type="button"
+          size="sm"
+          className="rounded-full gap-1.5 px-2.5 sm:px-3"
+        >
           <UserPlus className="size-4" />
-          Share
+          <span className="hidden sm:inline">Share</span>
         </Button>
-        <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full gap-1.5 px-2.5 sm:px-3"
+        >
           <SlidersHorizontal className="size-[18px]" />
-          Customize
+          <span className="hidden md:inline">Customize</span>
         </Button>
       </div>
     </header>

@@ -2,6 +2,20 @@ import clsx from "clsx";
 import type React from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   IconCalendar,
   IconChevronDown,
   IconPlus,
@@ -25,7 +39,6 @@ type Pop =
   | { k: "due"; taskId: string }
   | { k: "prio"; taskId: string }
   | { k: "statuspick"; taskId: string }
-  | { k: "taskmenu"; taskId: string }
   | { k: "sectionmenu"; sectionId: string };
 
 type Props = {
@@ -130,6 +143,82 @@ function sortTasks(list: TaskDoc[], mode: SortMode): TaskDoc[] {
   return out;
 }
 
+function ListSectionContextMenu({
+  section,
+  onAddTask,
+  onRequestRenameSection,
+  onDeleteSection,
+  children,
+}: {
+  section: SectionDoc;
+  onAddTask: (sectionId: string) => void;
+  onRequestRenameSection: (sectionId: string, currentName: string) => void;
+  onDeleteSection: (sectionId: string) => void;
+  children: React.ReactElement;
+}) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => onAddTask(section.id)}>
+          Add task
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => onRequestRenameSection(section.id, section.name)}
+        >
+          Rename section…
+        </ContextMenuItem>
+        <ContextMenuItem
+          variant="destructive"
+          onSelect={() => void onDeleteSection(section.id)}
+        >
+          Delete section…
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function ListTaskContextMenu({
+  task,
+  allowAddSubtask,
+  onTaskClick,
+  onOpenSubtask,
+  onDeleteTask,
+  children,
+}: {
+  task: TaskDoc;
+  allowAddSubtask: boolean;
+  onTaskClick: (t: TaskDoc) => void;
+  onOpenSubtask: () => void;
+  onDeleteTask: (taskId: string) => void;
+  children: React.ReactElement;
+}) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => onTaskClick(task)}>
+          Open details
+        </ContextMenuItem>
+        {allowAddSubtask ? (
+          <ContextMenuItem onSelect={() => onOpenSubtask()}>
+            Add subtask
+          </ContextMenuItem>
+        ) : null}
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onSelect={() => void onDeleteTask(task.id)}
+        >
+          Delete task…
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
 function GroupSelectCheckbox({
   taskIds,
   selectedIds,
@@ -218,85 +307,96 @@ export function ListView({
           const ids = rowTasks.map((t) => t.id);
           return (
             <Fragment key={s.id}>
-              <tr className="hover:[&>td]:bg-transparent">
-                {multiSelectMode ? (
-                  <td style={{ width: 36, verticalAlign: "middle" }}>
-                    {ids.length > 0 ? (
-                      <GroupSelectCheckbox
-                        taskIds={ids}
-                        selectedIds={selectedIds}
-                        onSetManySelected={onSetManySelected}
-                      />
-                    ) : null}
-                  </td>
-                ) : null}
-                <td
-                  className="border-b-0 pb-2 pt-[22px] text-[13px] font-bold"
-                  colSpan={8}
-                >
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span className="text-[13px] font-bold">{s.name}</span>
-                    <button
-                      type="button"
-                      className="rounded-pill border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
-                      onClick={() => onAddTask(s.id)}
-                    >
-                      + Add task
-                    </button>
-                    <div className="relative inline-flex items-center" data-popover-root>
+              <ListSectionContextMenu
+                section={s}
+                onAddTask={onAddTask}
+                onRequestRenameSection={onRequestRenameSection}
+                onDeleteSection={onDeleteSection}
+              >
+                <tr className="hover:[&>td]:bg-transparent">
+                  {multiSelectMode ? (
+                    <td style={{ width: 36, verticalAlign: "middle" }}>
+                      {ids.length > 0 ? (
+                        <GroupSelectCheckbox
+                          taskIds={ids}
+                          selectedIds={selectedIds}
+                          onSetManySelected={onSetManySelected}
+                        />
+                      ) : null}
+                    </td>
+                  ) : null}
+                  <td
+                    className="border-b-0 pb-2 pt-[22px] text-[13px] font-bold"
+                    colSpan={8}
+                  >
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span className="text-[13px] font-bold">{s.name}</span>
                       <button
                         type="button"
-                        className="grid place-items-center rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
-                        aria-label="Section options"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPop(
-                            pop?.k === "sectionmenu" && pop.sectionId === s.id
-                              ? null
-                              : { k: "sectionmenu", sectionId: s.id },
-                          );
-                        }}
+                        className="rounded-pill border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[open=true]:border-border data-[open=true]:bg-hover-surface data-[open=true]:text-fg"
+                        onClick={() => onAddTask(s.id)}
                       >
-                        <IconChevronDown
-                          style={{
-                            transform:
-                              pop?.k === "sectionmenu" && pop.sectionId === s.id
-                                ? "rotate(180deg)"
-                                : undefined,
-                          }}
-                        />
+                        + Add task
                       </button>
-                      {pop?.k === "sectionmenu" && pop.sectionId === s.id ? (
-                        <div
-                          className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-                          data-popover-root
+                      <div
+                        className="relative inline-flex items-center"
+                        data-popover-root
+                      >
+                        <button
+                          type="button"
+                          className="grid place-items-center rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg [&_svg]:size-[18px]"
+                          aria-label="Section options"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPop(
+                              pop?.k === "sectionmenu" && pop.sectionId === s.id
+                                ? null
+                                : { k: "sectionmenu", sectionId: s.id },
+                            );
+                          }}
                         >
-                          <button
-                            type="button"
-                            className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-                            onClick={() => {
-                              setPop(null);
-                              onRequestRenameSection(s.id, s.name);
+                          <IconChevronDown
+                            style={{
+                              transform:
+                                pop?.k === "sectionmenu" &&
+                                pop.sectionId === s.id
+                                  ? "rotate(180deg)"
+                                  : undefined,
                             }}
+                          />
+                        </button>
+                        {pop?.k === "sectionmenu" && pop.sectionId === s.id ? (
+                          <div
+                            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+                            data-popover-root
                           >
-                            Rename section…
-                          </button>
-                          <button
-                            type="button"
-                            className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-soft-danger hover:bg-hover-surface"
-                            onClick={() => {
-                              setPop(null);
-                              void onDeleteSection(s.id);
-                            }}
-                          >
-                            Delete section…
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </span>
-                </td>
-              </tr>
+                            <button
+                              type="button"
+                              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
+                              onClick={() => {
+                                setPop(null);
+                                onRequestRenameSection(s.id, s.name);
+                              }}
+                            >
+                              Rename section…
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-soft-danger hover:bg-hover-surface"
+                              onClick={() => {
+                                setPop(null);
+                                void onDeleteSection(s.id);
+                              }}
+                            >
+                              Delete section…
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </span>
+                  </td>
+                </tr>
+              </ListSectionContextMenu>
               {rowTasks.map((t) => (
                 <Fragment key={t.id}>
                   <TaskRow
@@ -482,13 +582,14 @@ export function ListView({
         });
 
   return (
-    <div className="px-7 pb-12">
-      <table
-        className={clsx(
-          "w-full border-separate border-spacing-0",
-          multiSelectMode && "[&_.subtask-composer]:pl-[94px]!",
-        )}
-      >
+    <div className="min-w-0 max-w-full pb-12">
+      <div className="overflow-x-auto px-7 [-ms-overflow-style:auto]">
+        <table
+          className={clsx(
+            "w-full min-w-[680px] border-separate border-spacing-0",
+            multiSelectMode && "[&_.subtask-composer]:pl-[94px]!",
+          )}
+        >
         <thead>
           <tr>
             {multiSelectMode ? (
@@ -554,6 +655,7 @@ export function ListView({
         </thead>
         <tbody>{sectionBody}</tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -665,7 +767,7 @@ function TaskRowMetaColumns({
         </button>
         {pop?.k === "assign" && pop.taskId === t.id ? (
           <div
-            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            className="absolute left-0 top-[calc(100%+4px)] z-50 flex min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
             data-popover-root
           >
             <button
@@ -716,7 +818,7 @@ function TaskRowMetaColumns({
         </button>
         {pop?.k === "start" && pop.taskId === t.id ? (
           <div
-            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[220px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
             data-popover-root
           >
             <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -774,7 +876,7 @@ function TaskRowMetaColumns({
         </button>
         {pop?.k === "due" && pop.taskId === t.id ? (
           <div
-            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[220px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
             data-popover-root
           >
             <div className="px-0.5 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -821,7 +923,7 @@ function TaskRowMetaColumns({
         </button>
         {pop?.k === "prio" && pop.taskId === t.id ? (
           <div
-            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+            className="absolute right-0 top-[calc(100%+4px)] z-50 flex min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
             data-popover-root
           >
             {prios.map((p) => (
@@ -841,64 +943,51 @@ function TaskRowMetaColumns({
         ) : null}
       </td>
       <td
-        style={{ verticalAlign: "middle", position: "relative" }}
-        data-popover-root
+        style={{ verticalAlign: "middle" }}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          className="grid size-8 place-items-center rounded-card font-black tracking-wide text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg"
-          aria-label="Task actions"
-          onClick={(e) => {
-            e.stopPropagation();
-            setPop(
-              pop?.k === "taskmenu" && pop.taskId === t.id
-                ? null
-                : { k: "taskmenu", taskId: t.id },
-            );
-          }}
-        >
-          ···
-        </button>
-        {pop?.k === "taskmenu" && pop.taskId === t.id ? (
-          <div
-            className="absolute left-0 top-[calc(100%+4px)] z-40 flex min-w-[180px] flex-col gap-0.5 rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
-            data-popover-root
-          >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-              onClick={() => {
-                setPop(null);
-                onTaskClick(t);
-              }}
+              className="grid size-8 place-items-center rounded-card font-black tracking-wide text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[state=open]:bg-hover-surface data-[state=open]:text-fg"
+              aria-label="Task actions"
+            >
+              ···
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            sideOffset={4}
+            collisionPadding={8}
+            className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
+          >
+            <DropdownMenuItem
+              className="text-[13px]"
+              onSelect={() => onTaskClick(t)}
             >
               Open details
-            </button>
+            </DropdownMenuItem>
             {subtaskQuickAdd ? (
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-fg hover:bg-hover-surface"
-                onClick={() => {
-                  setPop(null);
-                  onOpenSubtask();
-                }}
+              <DropdownMenuItem
+                className="text-[13px]"
+                onSelect={() => onOpenSubtask()}
               >
                 <IconPlus width={14} height={14} />
                 Add subtask
-              </button>
+              </DropdownMenuItem>
             ) : null}
-            <button
-              type="button"
-              className="w-full rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-[13px] text-soft-danger hover:bg-hover-surface"
-              onClick={() => {
-                setPop(null);
-                void onDeleteTask(t.id);
-              }}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              className="text-[13px]"
+              onSelect={() => void onDeleteTask(t.id)}
             >
               Delete task…
-            </button>
-          </div>
-        ) : null}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </td>
     </>
   );
@@ -940,7 +1029,7 @@ function TaskStatusPickCell({
       />
       {open ? (
         <div
-          className="absolute left-0 top-[calc(100%+4px)] z-40 flex max-h-[min(320px,70vh)] min-w-[200px] flex-col gap-0.5 overflow-y-auto rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
+          className="absolute left-0 top-[calc(100%+4px)] z-50 flex max-h-[min(320px,70vh)] min-w-[200px] max-w-[min(320px,calc(100vw-1.5rem))] flex-col gap-0.5 overflow-y-auto rounded-modal border border-border-subtle bg-sidebar p-1.5 shadow-inline-popover"
           data-popover-root
           role="listbox"
           aria-label="Task status"
@@ -1038,52 +1127,60 @@ function TaskRow({
 
   return (
     <>
-      <tr className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:px-3 [&>td]:py-1.5 hover:[&>td]:bg-row-hover">
-        {multiSelectMode ? (
-          <td style={{ verticalAlign: "middle" }}>
-            <input
-              type="checkbox"
-              className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
-              title="Select for bulk actions"
-              checked={selectedIds.has(t.id)}
-              onChange={() => onToggleSelect(t.id)}
-              onClick={(e) => e.stopPropagation()}
-            />
+      <ListTaskContextMenu
+        task={t}
+        allowAddSubtask
+        onTaskClick={onTaskClick}
+        onOpenSubtask={onOpenSubtask}
+        onDeleteTask={onDeleteTask}
+      >
+        <tr className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:px-3 [&>td]:py-1.5 hover:[&>td]:bg-row-hover">
+          {multiSelectMode ? (
+            <td style={{ verticalAlign: "middle" }}>
+              <input
+                type="checkbox"
+                className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
+                title="Select for bulk actions"
+                checked={selectedIds.has(t.id)}
+                onChange={() => onToggleSelect(t.id)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </td>
+          ) : null}
+          <TaskStatusPickCell
+            t={t}
+            statuses={statuses}
+            pop={pop}
+            setPop={setPop}
+            onStatusChange={onStatusChange}
+          />
+          <td
+            onClick={() => onTaskClick(t)}
+            onKeyDown={handleTaskKeyDown}
+            style={{ cursor: "pointer" }}
+          >
+            <span style={{ fontWeight: 600 }}>{t.title}</span>
           </td>
-        ) : null}
-        <TaskStatusPickCell
-          t={t}
-          statuses={statuses}
-          pop={pop}
-          setPop={setPop}
-          onStatusChange={onStatusChange}
-        />
-        <td
-          onClick={() => onTaskClick(t)}
-          onKeyDown={handleTaskKeyDown}
-          style={{ cursor: "pointer" }}
-        >
-          <span style={{ fontWeight: 600 }}>{t.title}</span>
-        </td>
-        <TaskRowMetaColumns
-          t={t}
-          uid={uid}
-          pop={pop}
-          setPop={setPop}
-          subtaskQuickAdd={{
-            count: subtasks.length,
-            onAdd: onOpenSubtask,
-          }}
-          onAssign={onAssign}
-          onStartChange={onStartChange}
-          onDueChange={onDueChange}
-          onPriorityChange={onPriorityChange}
-          onDeleteTask={onDeleteTask}
-          onTaskClick={onTaskClick}
-          onOpenSubtask={onOpenSubtask}
-          statuses={statuses}
-        />
-      </tr>
+          <TaskRowMetaColumns
+            t={t}
+            uid={uid}
+            pop={pop}
+            setPop={setPop}
+            subtaskQuickAdd={{
+              count: subtasks.length,
+              onAdd: onOpenSubtask,
+            }}
+            onAssign={onAssign}
+            onStartChange={onStartChange}
+            onDueChange={onDueChange}
+            onPriorityChange={onPriorityChange}
+            onDeleteTask={onDeleteTask}
+            onTaskClick={onTaskClick}
+            onOpenSubtask={onOpenSubtask}
+            statuses={statuses}
+          />
+        </tr>
+      </ListTaskContextMenu>
       {orderedSubtasks.map((st, si) => {
         const isLastSubInTree =
           si === orderedSubtasks.length - 1 && !subtaskComposerOpen;
@@ -1093,60 +1190,66 @@ function TaskRow({
           }
         };
         return (
-          <tr
+          <ListTaskContextMenu
             key={st.id}
-            className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:px-3 [&>td]:py-1.5 hover:[&>td]:bg-row-hover"
+            task={st}
+            allowAddSubtask={false}
+            onTaskClick={onTaskClick}
+            onOpenSubtask={onOpenSubtask}
+            onDeleteTask={onDeleteTask}
           >
-            {multiSelectMode ? (
-             <td style={{ verticalAlign: "middle" }}>
-                <input
-                  type="checkbox"
-                  className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
-                  checked={selectedIds.has(st.id)}
-                  onChange={() => onToggleSelect(st.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
+            <tr className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:px-3 [&>td]:py-1.5 hover:[&>td]:bg-row-hover">
+              {multiSelectMode ? (
+                <td style={{ verticalAlign: "middle" }}>
+                  <input
+                    type="checkbox"
+                    className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
+                    checked={selectedIds.has(st.id)}
+                    onChange={() => onToggleSelect(st.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </td>
+              ) : null}
+              <TaskStatusPickCell
+                t={st}
+                statuses={statuses}
+                pop={pop}
+                setPop={setPop}
+                onStatusChange={onStatusChange}
+              />
+              <td
+                onClick={() => onTaskClick(st)}
+                onKeyDown={handleSubKeyDown}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="flex min-h-7 items-center gap-1.5">
+                  <span
+                    className={clsx(
+                      "relative h-7 min-h-7 w-[22px] shrink-0 self-stretch before:pointer-events-none after:pointer-events-none before:absolute before:left-2.5 before:top-0 before:border-l-2 before:border-[rgba(111,113,119,0.55)] after:absolute after:left-2.5 after:top-1/2 after:h-0 after:w-3 after:-translate-y-px after:border-t-2 after:border-[rgba(111,113,119,0.55)]",
+                      isLastSubInTree ? "before:bottom-1/2" : "before:bottom-0",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="text-[13px] font-semibold">{st.title}</span>
+                </div>
               </td>
-            ) : null}
-            <TaskStatusPickCell
-              t={st}
-              statuses={statuses}
-              pop={pop}
-              setPop={setPop}
-              onStatusChange={onStatusChange}
-            />
-            <td
-              onClick={() => onTaskClick(st)}
-              onKeyDown={handleSubKeyDown}
-              style={{ cursor: "pointer" }}
-            >
-              <div className="flex min-h-7 items-center gap-1.5">
-                <span
-                  className={clsx(
-                    "relative h-7 min-h-7 w-[22px] shrink-0 self-stretch before:pointer-events-none after:pointer-events-none before:absolute before:left-2.5 before:top-0 before:border-l-2 before:border-[rgba(111,113,119,0.55)] after:absolute after:left-2.5 after:top-1/2 after:h-0 after:w-3 after:-translate-y-px after:border-t-2 after:border-[rgba(111,113,119,0.55)]",
-                    isLastSubInTree ? "before:bottom-1/2" : "before:bottom-0",
-                  )}
-                  aria-hidden
-                />
-                <span className="text-[13px] font-semibold">{st.title}</span>
-              </div>
-            </td>
-            <TaskRowMetaColumns
-              t={st}
-              uid={uid}
-              pop={pop}
-              setPop={setPop}
-              subtaskQuickAdd={null}
-              onAssign={onAssign}
-              onStartChange={onStartChange}
-              onDueChange={onDueChange}
-              onPriorityChange={onPriorityChange}
-              onDeleteTask={onDeleteTask}
-              onTaskClick={onTaskClick}
-              onOpenSubtask={onOpenSubtask}
-              statuses={statuses}
-            />
-          </tr>
+              <TaskRowMetaColumns
+                t={st}
+                uid={uid}
+                pop={pop}
+                setPop={setPop}
+                subtaskQuickAdd={null}
+                onAssign={onAssign}
+                onStartChange={onStartChange}
+                onDueChange={onDueChange}
+                onPriorityChange={onPriorityChange}
+                onDeleteTask={onDeleteTask}
+                onTaskClick={onTaskClick}
+                onOpenSubtask={onOpenSubtask}
+                statuses={statuses}
+              />
+            </tr>
+          </ListTaskContextMenu>
         );
       })}
     </>
