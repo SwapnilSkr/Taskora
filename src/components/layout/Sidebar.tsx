@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useModals } from '@/context/ModalContext'
 import { createProject, subscribeProjects } from '@/services/db'
 import type { ProjectDoc } from '@/types/models'
+import { ProjectColorPicker } from '@/components/ProjectColorPicker'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -128,27 +129,39 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       <div className="text-muted-foreground px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider">
         Projects
       </div>
-      {projects.map((p) => (
-        <Link
-          key={p.id}
-          to={`/project/${p.id}/list`}
-          className={clsx(
-            navBtn,
-            loc.pathname.startsWith(`/project/${p.id}`) && navActive,
-          )}
-          aria-current={
-            loc.pathname.startsWith(`/project/${p.id}`) ? 'page' : undefined
-          }
-        >
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
-            style={{
-              background: p.color || 'var(--color-project, var(--chart-2))',
-            }}
-          />
-          <span className="truncate">{p.name}</span>
-        </Link>
-      ))}
+      {projects.map((p) => {
+        const isProjectRoute = loc.pathname.startsWith(`/project/${p.id}`)
+        return (
+          <div
+            key={p.id}
+            className={clsx(
+              'flex w-full min-w-0 items-center gap-0.5 rounded-md transition-colors duration-120',
+              isProjectRoute ? 'bg-accent' : 'hover:bg-accent/85',
+            )}
+          >
+            {user ? (
+              <ProjectColorPicker
+                uid={user.uid}
+                projectId={p.id}
+                color={p.color}
+                align="start"
+                side="right"
+              />
+            ) : null}
+            <Link
+              to={`/project/${p.id}/list`}
+              className={clsx(
+                'min-w-0 flex-1 truncate rounded-md px-2 py-2 text-left text-[13px] text-foreground transition-colors hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                isProjectRoute && 'font-medium',
+              )}
+              aria-current={isProjectRoute ? 'page' : undefined}
+              onClick={() => onNavigate?.()}
+            >
+              {p.name}
+            </Link>
+          </div>
+        )
+      })}
 
       <Separator className="my-3 bg-border" />
 

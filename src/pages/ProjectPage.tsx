@@ -8,6 +8,7 @@ import {
   IconSearch,
   IconStar,
 } from '../components/icons'
+import { ProjectColorPicker } from '../components/ProjectColorPicker'
 import { TaskDetailPanel } from '../components/TaskDetailPanel'
 import { useAuth } from '../context/AuthContext'
 import { useModals } from '../context/ModalContext'
@@ -353,9 +354,25 @@ export function ProjectPage() {
       <div className="min-w-0 px-3 pb-0 pt-4 sm:px-5 sm:pt-5 md:px-7">
         <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2.5">
           <IconList className="size-5 shrink-0 text-muted-foreground hover:text-foreground" />
-          <span
-            className="h-3 w-3 shrink-0 rounded-[3px]"
-            style={{ background: project.color }}
+          <ProjectColorPicker
+            uid={uid}
+            projectId={pid}
+            color={project.color}
+            align="start"
+            side="bottom"
+            trigger={
+              <button
+                type="button"
+                className="text-muted-foreground grid size-8 shrink-0 place-items-center rounded-md outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-share/40"
+                title="Change project color"
+                aria-label="Change project color"
+              >
+                <span
+                  className="h-3 w-3 rounded-[3px] ring-1 ring-border"
+                  style={{ background: project.color }}
+                />
+              </button>
+            }
           />
           <h1 className="m-0 min-w-0 flex-1 truncate text-lg font-semibold tracking-tight sm:text-[22px]">
             {project.name}
