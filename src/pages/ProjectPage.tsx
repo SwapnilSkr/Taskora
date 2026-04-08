@@ -785,6 +785,7 @@ export function ProjectPage() {
             tasks={filteredTasks}
             tasksForMove={tasks}
             onTaskClick={setSelected}
+            onAddSection={() => void onAddSection()}
             onMoveTask={(taskId, patch) => {
               void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
                 const msg =
@@ -812,7 +813,7 @@ export function ProjectPage() {
         ) : null}
       </Suspense>
 
-      {activeView === 'list' || activeView === 'board' ? (
+      {activeView === 'list' ? (
         <Button
           type="button"
           variant="ghost"
