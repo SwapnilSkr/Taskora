@@ -1,5 +1,4 @@
 import type { Editor } from '@tiptap/core'
-import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
@@ -28,7 +27,8 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react'
-import { TaskImagePaste } from '@/extensions/taskImagePaste'
+import { TaskImage } from '@/extensions/taskImage'
+import { finalizeTaskImageUpload, TaskImagePaste } from '@/extensions/taskImagePaste'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -59,7 +59,7 @@ type Props = {
    * Debounce before calling `onMarkdownChange`. Use `0` for comments (instant React state).
    */
   debounceMs?: number
-  /** Shorter min-height for comment composer. */
+  /** Override min height of the prose area (description vs comment). */
   minEditorHeightClass?: string
 }
 
@@ -78,7 +78,7 @@ export const TaskTipTapEditor = forwardRef<TaskTipTapEditorRef, Props>(
       wrapperClassName,
       onPasteImageBlob,
       debounceMs = 320,
-      minEditorHeightClass = 'min-h-[120px]',
+      minEditorHeightClass = 'min-h-[280px]',
     },
     ref,
   ) {
@@ -131,12 +131,12 @@ export const TaskTipTapEditor = forwardRef<TaskTipTapEditorRef, Props>(
               'font-medium text-share underline decoration-share/50 underline-offset-2 hover:decoration-share',
           },
         }),
-        Image.configure({
+        TaskImage.configure({
           inline: false,
           allowBase64: false,
           HTMLAttributes: {
             class:
-              'my-2 block max-h-[220px] max-w-full rounded-lg border border-border/60 object-contain',
+              'my-2 block max-h-[min(280px,45vh)] max-w-full rounded-lg border border-border/60 object-contain',
           },
         }),
         // eslint-disable-next-line react-hooks/refs -- placeholder ref read when ProseMirror decorates, not during render
@@ -240,6 +240,15 @@ export const TaskTipTapEditor = forwardRef<TaskTipTapEditorRef, Props>(
         },
         replaceMarkdownUrl: (fromUrl: string, toUrl: string) => {
           if (!editor) return
+          if (fromUrl.startsWith('blob:')) {
+            void finalizeTaskImageUpload(editor, fromUrl, toUrl).then((ok) => {
+              if (!ok) return
+              const md = taskEditorHtmlToMarkdown(editor.getHTML())
+              lastEmitted.current = md
+              onMarkdownChange(md)
+            })
+            return
+          }
           let md = taskEditorHtmlToMarkdown(editor.getHTML())
           if (!md.includes(fromUrl)) return
           md = md.replaceAll(fromUrl, toUrl)
@@ -516,7 +525,7 @@ export const TaskTipTapEditor = forwardRef<TaskTipTapEditorRef, Props>(
 
         <EditorContent
           editor={editor}
-          className="max-h-[min(420px,50vh)] overflow-y-auto"
+          className="max-h-[min(640px,72vh)] overflow-y-auto"
           onBlur={() => {
             if (debounceMs <= 0) return
             if (debounceTimer.current) {

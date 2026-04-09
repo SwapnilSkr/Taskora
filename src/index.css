@@ -333,4 +333,61 @@
     color: var(--muted-foreground);
     opacity: 0.38;
   }
+
+  /* Uploading image: Asana-style skeleton until remote URL is ready */
+  .task-tiptap-editor .task-tiptap-image-frame {
+    position: relative;
+    margin-block: 0.5rem;
+    max-width: 100%;
+  }
+
+  .task-tiptap-editor .task-tiptap-image-frame--loading {
+    min-height: 148px;
+    border-radius: 0.65rem;
+    outline: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+    background: color-mix(in oklab, var(--muted) 35%, transparent);
+  }
+
+  .task-tiptap-editor .task-tiptap-image-skeleton {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+    background: linear-gradient(
+      110deg,
+      color-mix(in oklab, var(--muted) 40%, transparent) 0%,
+      color-mix(in oklab, var(--muted-foreground) 12%, transparent) 45%,
+      color-mix(in oklab, var(--muted) 40%, transparent) 90%
+    );
+    background-size: 200% 100%;
+    animation: task-tiptap-image-shimmer 1.15s ease-in-out infinite;
+  }
+
+  .task-tiptap-editor .task-tiptap-image-frame--loading .task-tiptap-image-skeleton {
+    display: block;
+  }
+
+  .task-tiptap-editor .task-tiptap-image-img {
+    display: block;
+    max-height: min(280px, 45vh);
+    max-width: 100%;
+    border-radius: 0.65rem;
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+    margin: 0;
+  }
+
+  @keyframes task-tiptap-image-shimmer {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
 }

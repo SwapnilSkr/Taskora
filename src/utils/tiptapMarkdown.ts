@@ -27,13 +27,26 @@ turndown.addRule('underlineTag', {
   },
 })
 
+/** TipTap task image wrapper: keep a single `![](…)` from the inner `<img>`. */
+turndown.addRule('taskImageFrame', {
+  filter(node) {
+    return (
+      node.nodeName === 'DIV' &&
+      (node as HTMLElement).getAttribute('data-task-image') === '1'
+    )
+  },
+  replacement(content) {
+    return content.trim()
+  },
+})
+
 /** Markdown stored in Firestore → safe HTML for TipTap `setContent`. */
 export function taskMarkdownToEditorHtml(markdown: string): string {
   if (!markdown.trim()) return '<p></p>'
   const raw = marked.parse(markdown, { async: false }) as string
   return DOMPurify.sanitize(raw, {
     USE_PROFILES: { html: true },
-    ADD_ATTR: ['target', 'class'],
+    ADD_ATTR: ['target', 'class', 'data-task-image', 'data-uploading'],
   })
 }
 

@@ -59,7 +59,7 @@ export function AppLayout() {
         <SheetContent
           side="left"
           showCloseButton
-          className="border-border bg-sidebar text-sidebar-foreground w-[min(var(--spacing-sidebar),88vw)] max-w-none gap-0 border-r p-0 sm:w-sidebar [&>button]:text-sidebar-foreground"
+          className="border-border bg-sidebar text-sidebar-foreground w-[min(var(--spacing-sidebar),88vw)] data-[side=left]:sm:max-w-none gap-0 border-r p-0 sm:w-sidebar [&>button]:text-sidebar-foreground"
         >
           <SheetTitle className="sr-only">Main navigation</SheetTitle>
           <div className="flex h-full min-h-0 flex-1 flex-col pt-2">

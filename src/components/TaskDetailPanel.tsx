@@ -165,6 +165,7 @@ export function TaskDetailPanel({
   }
 
   async function saveDescriptionNext(nextDescription: string) {
+    if (nextDescription.includes('blob:')) return
     await updateTaskDescriptionWithImageCleanup(
       uid,
       projectId,
@@ -729,7 +730,7 @@ export function TaskDetailPanel({
                   debounceMs={0}
                   placeholder="Add a comment…"
                   className="w-full"
-                  minEditorHeightClass="min-h-[100px]"
+                  minEditorHeightClass="min-h-[240px]"
                   onPasteImageBlob={async (blob) => {
                     setImageUploadBusy('comment')
                     try {
@@ -849,7 +850,7 @@ export function TaskDetailPanel({
         <DialogContent
           showCloseButton
           className={cn(
-            'flex h-[80vh] max-h-[80dvh] w-[min(92vw,52rem)] max-w-[min(92vw,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(92vw,52rem)]',
+            'flex h-[80vh] max-h-[80dvh] w-[min(90vw,36rem)] max-w-[min(90vw,36rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(90vw,36rem)]',
             'rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5 dark:bg-popover dark:ring-white/10',
           )}
         >
@@ -863,7 +864,7 @@ export function TaskDetailPanel({
     <Sheet open onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 border-l border-border/70 bg-popover p-0 shadow-[-24px_0_48px_-24px_rgba(0,0,0,0.18)] sm:max-w-[560px] dark:shadow-[-24px_0_56px_-24px_rgba(0,0,0,0.55)]"
+        className="flex h-full w-full flex-col gap-0 border-l border-border/70 bg-popover p-0 shadow-[-24px_0_48px_-24px_rgba(0,0,0,0.18)] data-[side=right]:sm:max-w-[min(56vw,560px)] dark:shadow-[-24px_0_56px_-24px_rgba(0,0,0,0.55)]"
       >
         {panel}
       </SheetContent>
