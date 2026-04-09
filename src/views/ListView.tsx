@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { CheckIcon } from "lucide-react";
 import type React from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
@@ -126,7 +127,7 @@ function StatusTag({
   const s = statuses.find((x) => x.id === sid);
   if (!s)
     return (
-      <span className="inline-block h-0.5 w-3 rounded-sm bg-border-subtle" />
+      <span className="inline-block size-2.5 rounded-full bg-border-subtle" />
     );
   return (
     <span
@@ -260,7 +261,7 @@ function GroupSelectCheckbox({
     <input
       ref={ref}
       type="checkbox"
-      className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
+      className="size-4 shrink-0 cursor-pointer rounded-full border-[1.5px] border-placeholder bg-app accent-share"
       title="Select all in group"
       checked={all}
       onChange={() => onSetManySelected(taskIds, !all)}
@@ -277,6 +278,8 @@ function ListDragHandleCell({ taskId }: { taskId: string }) {
     <td
       className="px-0! align-middle first:pl-0"
       style={{ width: 32, verticalAlign: "middle" }}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       <div className="flex min-h-9 items-center justify-center px-0.5">
         <button
@@ -303,13 +306,11 @@ function ListDragHandleCell({ taskId }: { taskId: string }) {
 function TaskTitleDropCell({
   task,
   isRoot,
-  onClick,
   onKeyDown,
   children,
 }: {
   task: TaskDoc;
   isRoot: boolean;
-  onClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   children: React.ReactNode;
 }) {
@@ -319,11 +320,11 @@ function TaskTitleDropCell({
   });
   return (
     <td
-      onClick={onClick}
+      tabIndex={0}
       onKeyDown={onKeyDown}
-      style={{ cursor: "pointer", verticalAlign: "middle" }}
+      style={{ verticalAlign: "middle" }}
       className={clsx(
-        "min-w-0 align-middle",
+        "min-w-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-share/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         isOver && isRoot && "bg-muted/25 ring-1 ring-inset ring-share/35",
       )}
     >
@@ -852,7 +853,8 @@ function TaskRowMetaColumns({
     t.assigneeId === uid ? "You" : t.assigneeId ? "Member" : "Assign";
   const prios: TaskDoc["priority"][] = ["low", "medium", "high", "urgent"];
 
-  const stopProp = (e: React.MouseEvent | React.KeyboardEvent) => {
+  /** Keep row click-to-open; only real controls stop propagation. */
+  const stopRowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
 
@@ -864,7 +866,7 @@ function TaskRowMetaColumns({
         </div>
       </td>
       {subtaskQuickAdd ? (
-        <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
+        <td className="align-middle">
           <div className="flex min-h-9 items-center">
             <button
               type="button"
@@ -875,7 +877,10 @@ function TaskRowMetaColumns({
               title={
                 subtaskQuickAdd.count > 0 ? "Add another subtask" : "Add subtask"
               }
-              onClick={() => subtaskQuickAdd.onAdd()}
+              onClick={(e) => {
+                stopRowClick(e);
+                subtaskQuickAdd.onAdd();
+              }}
             >
               <IconPlus width={14} height={14} className="shrink-0" />
               <span className="truncate">
@@ -898,8 +903,8 @@ function TaskRowMetaColumns({
           </div>
         </td>
       )}
-      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
-        <div className="flex min-h-9 items-center">
+      <td className="align-middle">
+        <div className="flex min-h-9 min-w-0 items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -909,6 +914,7 @@ function TaskRowMetaColumns({
                   t.assigneeId && "is-set",
                 )}
                 aria-label="Assign task"
+                onClick={stopRowClick}
               >
                 <IconUser width={14} height={14} className="shrink-0" />
                 <span className="truncate">{assigneeLabel}</span>
@@ -936,8 +942,8 @@ function TaskRowMetaColumns({
           </DropdownMenu>
         </div>
       </td>
-      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
-        <div className="flex min-h-9 items-center">
+      <td className="align-middle">
+        <div className="flex min-h-9 min-w-0 items-center">
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -947,6 +953,7 @@ function TaskRowMetaColumns({
                   start && "is-set",
                 )}
                 aria-label="Start date"
+                onClick={stopRowClick}
               >
                 <IconCalendar width={14} height={14} className="shrink-0" />
                 <span className="truncate">{fmtDate(start)}</span>
@@ -979,8 +986,8 @@ function TaskRowMetaColumns({
           </Popover>
         </div>
       </td>
-      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
-        <div className="flex min-h-9 items-center">
+      <td className="align-middle">
+        <div className="flex min-h-9 min-w-0 items-center">
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -990,6 +997,7 @@ function TaskRowMetaColumns({
                   due && "is-set",
                 )}
                 aria-label="Due date"
+                onClick={stopRowClick}
               >
                 <IconCalendar width={14} height={14} className="shrink-0" />
                 <span
@@ -1031,8 +1039,8 @@ function TaskRowMetaColumns({
           </Popover>
         </div>
       </td>
-      <td className="align-middle" onClick={stopProp} onKeyDown={stopProp}>
-        <div className="flex min-h-9 items-center">
+      <td className="align-middle">
+        <div className="flex min-h-9 min-w-0 items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -1040,6 +1048,7 @@ function TaskRowMetaColumns({
                 className="cursor-pointer rounded-pill border border-border-subtle bg-app px-2.5 py-1 text-[11px] font-bold uppercase leading-none tracking-wide text-fg outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[p=low]:border-transparent data-[p=low]:bg-prio-low-bg data-[p=low]:text-prio-low-fg data-[p=medium]:border-transparent data-[p=medium]:bg-prio-med-bg data-[p=medium]:text-prio-med-fg data-[p=high]:border-transparent data-[p=high]:bg-prio-high-bg data-[p=high]:text-prio-high-fg data-[p=urgent]:border-transparent data-[p=urgent]:bg-prio-urgent-bg data-[p=urgent]:text-prio-urgent-fg"
                 data-p={t.priority}
                 aria-label="Priority"
+                onClick={stopRowClick}
               >
                 {t.priority}
               </button>
@@ -1063,11 +1072,7 @@ function TaskRowMetaColumns({
           </DropdownMenu>
         </div>
       </td>
-      <td
-        className="align-middle"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
+      <td className="align-middle">
         <div className="flex min-h-9 items-center justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1075,6 +1080,7 @@ function TaskRowMetaColumns({
                 type="button"
                 className="grid size-8 shrink-0 place-items-center rounded-card font-black tracking-wide text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[state=open]:bg-hover-surface data-[state=open]:text-fg"
                 aria-label="Task actions"
+                onClick={stopRowClick}
               >
                 ···
               </button>
@@ -1127,21 +1133,26 @@ function TaskStatusPickCell({
 }) {
   const ordered = [...statuses].sort((a, b) => a.sortOrder - b.sortOrder);
   return (
-    <td
-      className="align-middle"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-    >
+    <td className="align-middle">
       <div className="flex min-h-9 items-center justify-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="size-4 shrink-0 rounded border-[1.5px] border-placeholder shadow-[inset_0_0_0_2px_var(--color-app)] outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[done=true]:border-tick-done data-[done=true]:bg-tick-done"
+              className="relative grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-placeholder bg-app shadow-[inset_0_0_0_2px_var(--color-app)] outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[done=true]:border-primary data-[done=true]:bg-primary data-[done=true]:text-primary-foreground data-[done=true]:shadow-none"
               data-done={t.completed ? "true" : "false"}
               title="Change status"
               aria-label="Change task status"
-            />
+              onClick={(e) => e.stopPropagation()}
+            >
+              {t.completed ? (
+                <CheckIcon
+                  className="size-2.5 text-primary-foreground"
+                  strokeWidth={2.75}
+                  aria-hidden
+                />
+              ) : null}
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
@@ -1156,7 +1167,7 @@ function TaskStatusPickCell({
               className="cursor-pointer text-[13px]"
               onSelect={() => onStatusChange(t.id, null)}
             >
-              <span className="inline-block size-2.5 shrink-0 rounded-sm bg-border-subtle" />
+              <span className="inline-block size-2.5 shrink-0 rounded-full bg-border-subtle" />
               No status
             </DropdownMenuItem>
             {ordered.map((s) => (
@@ -1166,7 +1177,7 @@ function TaskStatusPickCell({
                 onSelect={() => onStatusChange(t.id, s.id)}
               >
                 <span
-                  className="inline-block size-2.5 shrink-0 rounded-sm"
+                  className="inline-block size-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: s.color }}
                   aria-hidden
                 />
@@ -1234,12 +1245,19 @@ function TaskRow({
         onOpenSubtask={onOpenSubtask}
         onDeleteTask={onDeleteTask}
       >
-        <tr className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:align-middle [&>td]:px-3 [&>td]:py-2 hover:[&>td]:bg-row-hover">
+        <tr
+          className="group/task cursor-pointer [&>td]:border-b [&>td]:border-border-subtle [&>td]:align-middle [&>td]:px-3 [&>td]:py-2 hover:[&>td]:bg-row-hover"
+          onClick={() => onTaskClick(t)}
+        >
           {multiSelectMode ? (
-            <td className="align-middle">
+            <td
+              className="align-middle"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
               <input
                 type="checkbox"
-                className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
+                className="size-4 shrink-0 cursor-pointer rounded-full border-[1.5px] border-placeholder bg-app accent-share"
                 title="Select for bulk actions"
                 checked={selectedIds.has(t.id)}
                 onChange={() => onToggleSelect(t.id)}
@@ -1256,7 +1274,6 @@ function TaskRow({
           <TaskTitleDropCell
             task={t}
             isRoot={!t.parentTaskId}
-            onClick={() => onTaskClick(t)}
             onKeyDown={handleTaskKeyDown}
           >
             {t.title}
@@ -1296,12 +1313,19 @@ function TaskRow({
             onOpenSubtask={onOpenSubtask}
             onDeleteTask={onDeleteTask}
           >
-            <tr className="group/task [&>td]:border-b [&>td]:border-border-subtle [&>td]:align-middle [&>td]:px-3 [&>td]:py-2 hover:[&>td]:bg-row-hover">
+            <tr
+              className="group/task cursor-pointer [&>td]:border-b [&>td]:border-border-subtle [&>td]:align-middle [&>td]:px-3 [&>td]:py-2 hover:[&>td]:bg-row-hover"
+              onClick={() => onTaskClick(st)}
+            >
               {multiSelectMode ? (
-                <td className="align-middle">
+                <td
+                  className="align-middle"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   <input
                     type="checkbox"
-                    className="size-4 shrink-0 cursor-pointer rounded border-[1.5px] border-placeholder bg-app accent-share"
+                    className="size-4 shrink-0 cursor-pointer rounded-full border-[1.5px] border-placeholder bg-app accent-share"
                     checked={selectedIds.has(st.id)}
                     onChange={() => onToggleSelect(st.id)}
                     onClick={(e) => e.stopPropagation()}
@@ -1315,10 +1339,10 @@ function TaskRow({
                 onStatusChange={onStatusChange}
               />
               <td
-                className="align-middle"
-                onClick={() => onTaskClick(st)}
+                className="align-middle outline-none focus-visible:ring-2 focus-visible:ring-share/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                tabIndex={0}
                 onKeyDown={handleSubKeyDown}
-                style={{ cursor: "pointer", verticalAlign: "middle" }}
+                style={{ verticalAlign: "middle" }}
               >
                 <div className="flex min-h-9 items-center gap-1.5">
                   <span

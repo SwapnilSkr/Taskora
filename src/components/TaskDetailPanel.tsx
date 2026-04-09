@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import {
   Sheet,
   SheetContent,
@@ -46,6 +47,7 @@ import {
   markdownImageLine,
   textHasMarkdownImages,
 } from '@/utils/imagePaste'
+import { cn } from '@/lib/utils'
 
 type Props = {
   uid: string
@@ -55,6 +57,8 @@ type Props = {
   onClose: () => void
   onSaved: () => void
   onOpenTask?: (task: TaskDoc) => void
+  /** Centered modal (e.g. board) vs right sheet (default). */
+  presentation?: 'sheet' | 'dialog'
 }
 
 function dateInputValue(d: Date | null): string {
@@ -75,6 +79,22 @@ function fromDateInput(v: string): Timestamp | null {
 const NONE = '__none__'
 const UNASSIGNED = '__unassigned__'
 
+/** B2B task detail: grouped surfaces, subdued labels, elevated controls */
+const detailScrollArea =
+  'min-h-0 flex-1 overflow-auto bg-muted/5 px-5 py-5 dark:bg-background/40'
+const detailSection =
+  'rounded-xl border border-border/60 bg-card/60 p-4 shadow-sm ring-1 ring-foreground/5 dark:bg-card/40 dark:ring-white/10'
+const detailSectionHeading =
+  'text-sm font-semibold leading-tight tracking-tight text-foreground'
+const detailFieldLabel =
+  'mb-1.5 block text-xs font-medium text-muted-foreground'
+const detailControl =
+  'h-9 w-full rounded-lg border border-border/70 bg-background px-3 text-[13px] shadow-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 dark:bg-background/85'
+const detailWysiwyg =
+  'border-border/70 bg-background text-foreground min-h-[120px] w-full resize-y rounded-lg border px-3 py-2.5 text-[13px] leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]'
+const detailSecondaryAction =
+  'h-auto rounded-md px-2 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground'
+
 export function TaskDetailPanel({
   uid,
   projectId,
@@ -83,6 +103,7 @@ export function TaskDetailPanel({
   onClose,
   onSaved,
   onOpenTask,
+  presentation = 'sheet',
 }: Props) {
   const { user } = useAuth()
   const { confirm, prompt } = useModals()
@@ -167,34 +188,38 @@ export function TaskDetailPanel({
     ] as const
   ) satisfies readonly (readonly [typeof tab, string])[]
 
-  return (
-    <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="h-full w-full gap-0 p-0 sm:max-w-[520px] flex flex-col"
-      >
-        <SheetHeader className="border-border space-y-0 border-b px-[18px] py-4 text-left sm:text-left">
-          <div className="flex items-start gap-2.5">
-            <div className="pt-0.5">
-              <Checkbox
-                checked={t.completed}
-                onCheckedChange={() => {
-                  const comp = statuses.find((s) => s.isCompleted)
-                  const def = statuses.find((s) => s.isDefault)
-                  void savePatch({
-                    completed: !t.completed,
-                    statusId: !t.completed
-                      ? (comp?.id ?? null)
-                      : (def?.id ?? null),
-                  })
-                }}
-                aria-label="Mark complete"
-              />
-            </div>
+  const panel = (
+    <>
+        <SheetHeader
+          className={cn(
+            'space-y-0 border-b border-border/70 bg-muted/15 px-5 py-5 text-left backdrop-blur-sm sm:text-left dark:bg-muted/10',
+            presentation === 'dialog' && 'pr-16',
+          )}
+        >
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+            <p className="col-start-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/90">
+              Task
+            </p>
+            <Checkbox
+              className="col-start-1 row-start-2 size-5 shrink-0 self-center"
+              checked={t.completed}
+              onCheckedChange={() => {
+                const comp = statuses.find((s) => s.isCompleted)
+                const def = statuses.find((s) => s.isDefault)
+                void savePatch({
+                  completed: !t.completed,
+                  statusId: !t.completed
+                    ? (comp?.id ?? null)
+                    : (def?.id ?? null),
+                })
+              }}
+              aria-label="Mark complete"
+            />
             <Input
-              className="text-foreground border-none bg-transparent px-0 text-lg font-bold shadow-none focus-visible:ring-0"
+              className="col-start-2 row-start-2 h-auto min-h-0 border-0 border-transparent bg-transparent px-0 py-0 text-xl font-semibold tracking-tight text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent md:text-[1.35rem]"
               value={t.title}
               onChange={(e) => void savePatch({ title: e.target.value })}
+              placeholder="Untitled task"
             />
           </div>
         </SheetHeader>
@@ -202,325 +227,320 @@ export function TaskDetailPanel({
         <Tabs
           value={tab}
           onValueChange={(v) => setTab(v as typeof tab)}
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 flex-1 flex-col bg-background/40 dark:bg-background/25"
         >
           <TabsList
             variant="line"
-            className="border-border w-full justify-start gap-0 rounded-none border-b bg-transparent px-3.5 pt-1"
+            className="h-auto w-full justify-start gap-0.5 rounded-none border-b border-border/70 bg-muted/20 px-4 pt-1 dark:bg-muted/10"
           >
             {tabItems.map(([k, lab]) => (
               <TabsTrigger
                 key={k}
                 value={k}
-                className="rounded-none px-3 pb-3 pt-2.5 text-[13px] font-semibold data-active:shadow-none"
+                className="rounded-t-lg px-4 pb-3.5 pt-3 text-[13px] font-medium text-muted-foreground data-active:font-semibold data-active:text-foreground"
               >
                 {lab}
               </TabsTrigger>
             ))}
           </TabsList>
 
-          <div className="min-h-0 flex-1 overflow-auto px-[18px] py-4">
-            <TabsContent value="details" className="mt-0">
-              <div className="mt-3.5 flex flex-wrap items-center gap-x-3.5 gap-y-2 first:mt-0">
-                <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
-                  Description
-                </span>
-                <span className="text-muted-foreground text-[11px] font-medium normal-case tracking-normal opacity-90">
-                  Paste or attach images (⌘V / Ctrl+V)
-                </span>
-                <input
-                  ref={descImageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  aria-hidden
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    e.target.value = ''
-                    if (!f?.type.startsWith('image/')) return
-                    void (async () => {
-                      setImageUploadBusy('desc')
-                      try {
-                        const url = await uploadTaskImageBlob(
-                          uid,
-                          projectId,
-                          t.id,
-                          f,
-                          f.name,
-                        )
-                        descWysiwygRef.current?.appendImageMarkdown(
-                          markdownImageLine(url, f.name.slice(0, 40)),
-                        )
-                      } finally {
-                        setImageUploadBusy('idle')
-                      }
-                    })()
+          <div className={detailScrollArea}>
+            <TabsContent value="details" className="mt-0 space-y-5">
+              <section className={detailSection} aria-label="Description">
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-border/50 pb-3">
+                  <div>
+                    <h3 className={detailSectionHeading}>Description</h3>
+                    <p className="mt-1 max-w-prose text-xs leading-relaxed text-muted-foreground">
+                      Rich text and markdown. Paste or attach images (⌘V / Ctrl+V).
+                    </p>
+                  </div>
+                  <input
+                    ref={descImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    aria-hidden
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      e.target.value = ''
+                      if (!f?.type.startsWith('image/')) return
+                      void (async () => {
+                        setImageUploadBusy('desc')
+                        try {
+                          const url = await uploadTaskImageBlob(
+                            uid,
+                            projectId,
+                            t.id,
+                            f,
+                            f.name,
+                          )
+                          descWysiwygRef.current?.appendImageMarkdown(
+                            markdownImageLine(url, f.name.slice(0, 40)),
+                          )
+                        } finally {
+                          setImageUploadBusy('idle')
+                        }
+                      })()
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={cn(detailSecondaryAction, 'shrink-0')}
+                    disabled={imageUploadBusy !== 'idle'}
+                    onClick={() => descImageInputRef.current?.click()}
+                  >
+                    Attach image
+                  </Button>
+                </div>
+                <DescriptionWysiwyg
+                  ref={descWysiwygRef}
+                  markdown={t.description}
+                  onMarkdownChange={(md) => void saveDescriptionNext(md)}
+                  disabled={false}
+                  placeholder="What is this task about?"
+                  className={detailWysiwyg}
+                  onPasteImageBlob={async (blob) => {
+                    setImageUploadBusy('desc')
+                    try {
+                      return await uploadTaskImageBlob(
+                        uid,
+                        projectId,
+                        t.id,
+                        blob,
+                        'paste',
+                      )
+                    } finally {
+                      setImageUploadBusy('idle')
+                    }
                   }}
                 />
-                <Button
-                  type="button"
-                  variant="link"
-                  className="text-primary ml-auto h-auto p-0 text-[12px] font-semibold disabled:opacity-45"
-                  disabled={imageUploadBusy !== 'idle'}
-                  onClick={() => descImageInputRef.current?.click()}
-                >
-                  Attach image
-                </Button>
-              </div>
-              <DescriptionWysiwyg
-                ref={descWysiwygRef}
-                markdown={t.description}
-                onMarkdownChange={(md) => void saveDescriptionNext(md)}
-                disabled={false}
-                placeholder="What is this task about?"
-                className="border-input bg-background text-foreground min-h-[100px] w-full resize-y rounded-md border px-3 py-2 text-[13px] leading-[1.45]"
-                onPasteImageBlob={async (blob) => {
-                  setImageUploadBusy('desc')
-                  try {
-                    return await uploadTaskImageBlob(
-                      uid,
-                      projectId,
-                      t.id,
-                      blob,
-                      'paste',
-                    )
-                  } finally {
-                    setImageUploadBusy('idle')
-                  }
-                }}
-              />
+              </section>
 
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Start date
-                  </Label>
-                  <Input
-                    type="date"
-                    className="text-[13px]"
-                    value={dateInputValue(tsToDate(t.startDate))}
-                    onChange={(e) =>
-                      void savePatch({ startDate: fromDateInput(e.target.value) })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Due date
-                  </Label>
-                  <Input
-                    type="date"
-                    className="text-[13px]"
-                    value={dateInputValue(tsToDate(t.dueDate))}
-                    onChange={(e) =>
-                      void savePatch({ dueDate: fromDateInput(e.target.value) })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Status
-                  </Label>
-                  <Select
-                    value={t.statusId ?? NONE}
-                    onValueChange={(sid) => {
-                      const real = sid === NONE ? null : sid
-                      const s = statuses.find((x) => x.id === real)
-                      void savePatch({
-                        statusId: real,
-                        completed: s?.isCompleted ?? false,
-                      })
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="No status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>No status</SelectItem>
-                      {statuses.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Priority
-                  </Label>
-                  <Select
-                    value={t.priority}
-                    onValueChange={(v) =>
-                      void savePatch({
-                        priority: v as TaskDoc['priority'],
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Assignee
-                  </Label>
-                  <Select
-                    value={t.assigneeId ?? UNASSIGNED}
-                    onValueChange={(v) =>
-                      void savePatch({
-                        assigneeId: v === UNASSIGNED ? null : v,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
-                      <SelectItem value={uid}>
-                        Me ({user?.displayName || user?.email || 'self'})
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Approval
-                  </Label>
-                  <Select
-                    value={t.approvalStatus}
-                    onValueChange={(v) =>
-                      void savePatch({
-                        approvalStatus: v as TaskDoc['approvalStatus'],
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="pending">Pending approval</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Estimate (minutes)
-                  </Label>
-                  <Input
-                    type="number"
-                    className="text-[13px]"
-                    value={t.estimatedMinutes ?? ''}
-                    placeholder="e.g. 120"
-                    onChange={(e) =>
-                      void savePatch({
-                        estimatedMinutes: e.target.value
-                          ? Number(e.target.value)
-                          : null,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-bold uppercase tracking-wider">
-                    Tracked (minutes)
-                  </Label>
-                  <Input
-                    type="number"
-                    className="text-[13px]"
-                    value={t.trackedMinutes ?? ''}
-                    placeholder="Log time"
-                    onChange={(e) =>
-                      void savePatch({
-                        trackedMinutes: e.target.value
-                          ? Number(e.target.value)
-                          : null,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <Label className="text-[11px] font-bold uppercase tracking-wider">
-                  Tags
-                </Label>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  {t.tags.map((tag) => (
-                    <Button
-                      key={tag}
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="h-7 rounded-full px-2.5 text-xs font-normal"
-                      onClick={() =>
-                        void savePatch({ tags: t.tags.filter((x) => x !== tag) })
+              <section className={detailSection} aria-label="Schedule and assignment">
+                <h3 className={cn(detailSectionHeading, 'mb-4')}>
+                  Schedule & assignment
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className={detailFieldLabel}>Start date</Label>
+                    <Input
+                      type="date"
+                      className={detailControl}
+                      value={dateInputValue(tsToDate(t.startDate))}
+                      onChange={(e) =>
+                        void savePatch({ startDate: fromDateInput(e.target.value) })
                       }
-                      title="Remove tag"
+                    />
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>Due date</Label>
+                    <Input
+                      type="date"
+                      className={detailControl}
+                      value={dateInputValue(tsToDate(t.dueDate))}
+                      onChange={(e) =>
+                        void savePatch({ dueDate: fromDateInput(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>Status</Label>
+                    <Select
+                      value={t.statusId ?? NONE}
+                      onValueChange={(sid) => {
+                        const real = sid === NONE ? null : sid
+                        const s = statuses.find((x) => x.id === real)
+                        void savePatch({
+                          statusId: real,
+                          completed: s?.isCompleted ?? false,
+                        })
+                      }}
                     >
-                      {tag} ×
-                    </Button>
-                  ))}
-                  <Input
-                    className="text-[13px]"
-                    style={{ flex: '1 1 140px', minWidth: 120 }}
-                    placeholder="Add tag"
-                    value={tagDraft}
-                    onChange={(e) => setTagDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const v = tagDraft.trim()
-                        if (!v || t.tags.includes(v)) return
-                        void savePatch({ tags: [...t.tags, v] })
-                        setTagDraft('')
+                      <SelectTrigger className={cn(detailControl, 'flex w-full justify-between py-0 pr-2')}>
+                        <SelectValue placeholder="No status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE}>No status</SelectItem>
+                        {statuses.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>Priority</Label>
+                    <Select
+                      value={t.priority}
+                      onValueChange={(v) =>
+                        void savePatch({
+                          priority: v as TaskDoc['priority'],
+                        })
                       }
-                    }}
-                  />
+                    >
+                      <SelectTrigger className={cn(detailControl, 'flex w-full justify-between py-0 pr-2')}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>Assignee</Label>
+                    <Select
+                      value={t.assigneeId ?? UNASSIGNED}
+                      onValueChange={(v) =>
+                        void savePatch({
+                          assigneeId: v === UNASSIGNED ? null : v,
+                        })
+                      }
+                    >
+                      <SelectTrigger className={cn(detailControl, 'flex w-full justify-between py-0 pr-2')}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                        <SelectItem value={uid}>
+                          Me ({user?.displayName || user?.email || 'self'})
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>Approval</Label>
+                    <Select
+                      value={t.approvalStatus}
+                      onValueChange={(v) =>
+                        void savePatch({
+                          approvalStatus: v as TaskDoc['approvalStatus'],
+                        })
+                      }
+                    >
+                      <SelectTrigger className={cn(detailControl, 'flex w-full justify-between py-0 pr-2')}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="pending">Pending approval</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              </section>
 
-              <div className="mt-3 space-y-1.5">
-                <Label className="text-[11px] font-bold uppercase tracking-wider">
-                  Dependencies (task ids, comma-separated)
-                </Label>
-                <Input
-                  className="text-[13px]"
-                  value={t.dependencies.join(', ')}
-                  onChange={(e) =>
-                    void savePatch({
-                      dependencies: e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
-              </div>
+              <section className={detailSection} aria-label="Time tracking">
+                <h3 className={cn(detailSectionHeading, 'mb-4')}>Time tracking</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className={detailFieldLabel}>Estimate (minutes)</Label>
+                    <Input
+                      type="number"
+                      className={detailControl}
+                      value={t.estimatedMinutes ?? ''}
+                      placeholder="e.g. 120"
+                      onChange={(e) =>
+                        void savePatch({
+                          estimatedMinutes: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>Tracked (minutes)</Label>
+                    <Input
+                      type="number"
+                      className={detailControl}
+                      value={t.trackedMinutes ?? ''}
+                      placeholder="Log time"
+                      onChange={(e) =>
+                        void savePatch({
+                          trackedMinutes: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </section>
 
-              <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              <section className={detailSection} aria-label="Organization">
+                <h3 className={cn(detailSectionHeading, 'mb-4')}>Organization</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label className={detailFieldLabel}>Tags</Label>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      {t.tags.map((tag) => (
+                        <Button
+                          key={tag}
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="h-8 rounded-full border border-border/60 bg-muted/50 px-3 text-xs font-medium shadow-sm"
+                          onClick={() =>
+                            void savePatch({ tags: t.tags.filter((x) => x !== tag) })
+                          }
+                          title="Remove tag"
+                        >
+                          {tag}
+                          <span className="text-muted-foreground"> ×</span>
+                        </Button>
+                      ))}
+                      <Input
+                        className={cn(detailControl, 'min-w-32 flex-1')}
+                        placeholder="Add tag, press Enter"
+                        value={tagDraft}
+                        onChange={(e) => setTagDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const v = tagDraft.trim()
+                            if (!v || t.tags.includes(v)) return
+                            void savePatch({ tags: [...t.tags, v] })
+                            setTagDraft('')
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className={detailFieldLabel}>
+                      Dependencies{' '}
+                      <span className="font-normal text-muted-foreground/80">
+                        (task IDs, comma-separated)
+                      </span>
+                    </Label>
+                    <Input
+                      className={cn(detailControl, 'font-mono text-[12px]')}
+                      value={t.dependencies.join(', ')}
+                      onChange={(e) =>
+                        void savePatch({
+                          dependencies: e.target.value
+                            .split(',')
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
                 <Button
                   type="button"
                   variant="outline"
+                  className="rounded-lg border-destructive/40 font-medium text-destructive shadow-sm hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/15"
                   onClick={() => {
                     void (async () => {
                       const ok = await confirm({
@@ -539,22 +559,25 @@ export function TaskDetailPanel({
                   Delete task
                 </Button>
                 <div className="flex-1" />
-                <p className="text-muted-foreground self-center text-xs">
+                <p className="text-xs font-medium tabular-nums text-muted-foreground">
                   Updated {fmtDateFull(tsToDate(t.updatedAt))}
                 </p>
               </div>
             </TabsContent>
 
-            <TabsContent value="subtasks" className="mt-0">
+            <TabsContent value="subtasks" className="mt-0 space-y-3">
               {!isSubtask ? (
-                <div>
+                <div className="space-y-3">
                   {subtasks.map((st) => (
-                    <Card key={st.id} className="border-border mb-2">
-                      <CardContent className="px-2.5 py-2.5 text-[13px] font-semibold">
+                    <Card
+                      key={st.id}
+                      className="border-border/60 bg-card/50 shadow-sm ring-1 ring-foreground/5 dark:ring-white/10"
+                    >
+                      <CardContent className="px-4 py-3">
                         <Button
                           type="button"
-                          variant="link"
-                          className="text-primary h-auto w-full justify-start p-0 font-semibold"
+                          variant="ghost"
+                          className="h-auto w-full justify-start px-2 py-1.5 text-left text-[13px] font-semibold tracking-tight text-foreground hover:bg-muted/80"
                           onClick={() => {
                             setTab('details')
                             onOpenTask?.(st)
@@ -568,7 +591,7 @@ export function TaskDetailPanel({
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-2.5 rounded-full font-semibold"
+                    className="mt-1 rounded-lg border-dashed font-medium shadow-sm"
                     onClick={() => {
                       void (async () => {
                         const title = await prompt({
@@ -601,22 +624,23 @@ export function TaskDetailPanel({
               ) : null}
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-0">
-              <div>
+            <TabsContent value="comments" className="mt-0 space-y-4">
+              <div className="space-y-0">
                 {comments.map((c) => (
                   <div
                     key={c.id}
-                    className="border-border border-b py-2.5 text-[13px]"
+                    className="border-b border-border/60 py-4 text-[13px] last:border-b-0"
                   >
-                    <div className="text-muted-foreground mb-1 flex items-center justify-between gap-2.5 text-xs">
+                    <div className="mb-2 flex items-center justify-between gap-2.5 text-xs font-medium text-muted-foreground">
                       <span>
                         {c.authorName || 'Teammate'} ·{' '}
                         {fmtDateFull(tsToDate(c.createdAt))}
                       </span>
                       <Button
                         type="button"
-                        variant="link"
-                        className="text-primary h-auto shrink-0 p-0 text-[12px] font-semibold"
+                        variant="ghost"
+                        size="sm"
+                        className={cn(detailSecondaryAction, 'shrink-0')}
                         onClick={() => {
                           void (async () => {
                             const ok = await confirm({
@@ -635,65 +659,74 @@ export function TaskDetailPanel({
                         Delete
                       </Button>
                     </div>
-                    <div className="text-foreground text-[13px]">
+                    <div className="rounded-lg bg-muted/25 px-3 py-2.5 text-[13px] leading-relaxed text-foreground dark:bg-muted/15">
                       <RichTextContent text={c.text} />
                     </div>
                   </div>
                 ))}
-                <div className="text-muted-foreground mt-3.5 mb-1.5 flex flex-wrap items-center gap-x-3.5 gap-y-2 text-[11px] font-bold uppercase tracking-wider">
-                  <span>New comment</span>
-                  <span className="text-[11px] font-medium normal-case tracking-normal opacity-90">
-                    Images: ⌘V / Ctrl+V or attach
-                  </span>
-                  <input
-                    ref={commentImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    aria-hidden
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      e.target.value = ''
-                      if (!f?.type.startsWith('image/')) return
-                      const blobUrl = URL.createObjectURL(f)
-                      setCommentText(
-                        (prev) =>
-                          prev + markdownImageLine(blobUrl, f.name.slice(0, 40)),
-                      )
-                      void (async () => {
-                        setImageUploadBusy('comment')
-                        try {
-                          const url = await uploadTaskImageBlob(
-                            uid,
-                            projectId,
-                            t.id,
-                            f,
-                            f.name,
+                <section className={cn(detailSection, 'mt-2')}>
+                  <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <h3 className={detailSectionHeading}>New comment</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Images: ⌘V / Ctrl+V or attach below
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <input
+                        ref={commentImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        aria-hidden
+                        onChange={(e) => {
+                          const f = e.target.files?.[0]
+                          e.target.value = ''
+                          if (!f?.type.startsWith('image/')) return
+                          const blobUrl = URL.createObjectURL(f)
+                          setCommentText(
+                            (prev) =>
+                              prev + markdownImageLine(blobUrl, f.name.slice(0, 40)),
                           )
-                          setCommentText((prev) =>
-                            prev.includes(blobUrl)
-                              ? prev.replace(blobUrl, url)
-                              : prev + markdownImageLine(url, f.name.slice(0, 40)),
-                          )
-                        } finally {
-                          URL.revokeObjectURL(blobUrl)
-                          setImageUploadBusy('idle')
-                        }
-                      })()
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="text-primary ml-auto h-auto p-0 text-[12px] font-semibold disabled:opacity-45"
-                    disabled={imageUploadBusy !== 'idle'}
-                    onClick={() => commentImageInputRef.current?.click()}
-                  >
-                    Attach image
-                  </Button>
-                </div>
+                          void (async () => {
+                            setImageUploadBusy('comment')
+                            try {
+                              const url = await uploadTaskImageBlob(
+                                uid,
+                                projectId,
+                                t.id,
+                                f,
+                                f.name,
+                              )
+                              setCommentText((prev) =>
+                                prev.includes(blobUrl)
+                                  ? prev.replace(blobUrl, url)
+                                  : prev + markdownImageLine(url, f.name.slice(0, 40)),
+                              )
+                            } finally {
+                              URL.revokeObjectURL(blobUrl)
+                              setImageUploadBusy('idle')
+                            }
+                          })()
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={cn(detailSecondaryAction, 'shrink-0')}
+                        disabled={imageUploadBusy !== 'idle'}
+                        onClick={() => commentImageInputRef.current?.click()}
+                      >
+                        Attach image
+                      </Button>
+                    </div>
+                  </div>
                 <Textarea
-                  className="border-input bg-background min-h-[100px] text-[13px] leading-[1.45]"
+                  className={cn(
+                    detailWysiwyg,
+                    'min-h-[100px] resize-y',
+                  )}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   onPaste={(e) => {
@@ -725,11 +758,9 @@ export function TaskDetailPanel({
                   }}
                 />
                 {textHasMarkdownImages(commentText) ? (
-                  <div className="mt-2">
-                    <div className="text-muted-foreground mb-1.5 text-[11px] font-bold uppercase tracking-wider">
-                      Preview
-                    </div>
-                    <div className="border-border bg-background text-foreground rounded-md border px-3 py-2.5 text-[13px]">
+                  <div className="mt-3">
+                    <div className={cn(detailFieldLabel, 'mb-2 mt-0')}>Preview</div>
+                    <div className="rounded-lg border border-border/60 bg-background/80 px-3 py-2.5 text-[13px] shadow-inner">
                       <RichTextContent text={commentText} />
                     </div>
                   </div>
@@ -741,7 +772,7 @@ export function TaskDetailPanel({
                 ) : null}
                 <Button
                   type="button"
-                  className="mt-2.5 w-full rounded-full font-bold"
+                  className="mt-3 w-full rounded-lg font-semibold shadow-sm"
                   disabled={
                     imageUploadBusy !== 'idle' || commentText.includes('blob:')
                   }
@@ -763,14 +794,16 @@ export function TaskDetailPanel({
                 >
                   Comment
                 </Button>
+                </section>
               </div>
             </TabsContent>
 
             <TabsContent value="files" className="mt-0">
-              <div>
+              <section className={detailSection}>
+                <h3 className={cn(detailSectionHeading, 'mb-3')}>Upload</h3>
                 <Input
                   type="file"
-                  className="cursor-pointer text-[13px]"
+                  className={cn(detailControl, 'h-auto cursor-pointer py-2 text-[13px]')}
                   onChange={(e) => {
                     const f = e.target.files?.[0]
                     e.target.value = ''
@@ -778,21 +811,25 @@ export function TaskDetailPanel({
                     void uploadTaskFile(uid, projectId, t.id, f).then(onSaved)
                   }}
                 />
-                <div className="mt-3 grid gap-2">
+                <h3 className={cn(detailSectionHeading, 'mb-3 mt-6')}>
+                  Attachments
+                </h3>
+                <div className="grid gap-2">
                   {attachments.map((a) => (
                     <div key={a.id} className="flex items-stretch gap-2.5">
                       <a
                         href={a.downloadURL}
                         target="_blank"
                         rel="noreferrer"
-                        className="border-border bg-card text-foreground min-w-0 flex-1 rounded-lg border px-2.5 py-2.5 text-[13px] font-semibold no-underline"
+                        className="min-w-0 flex-1 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-[13px] font-semibold text-foreground no-underline shadow-sm transition-colors hover:bg-muted/35"
                       >
                         {a.name} · {(a.size / 1024).toFixed(1)} KB
                       </a>
                       <Button
                         type="button"
-                        variant="link"
-                        className="text-primary h-auto shrink-0 self-center p-0 text-[12px] font-semibold"
+                        variant="ghost"
+                        size="sm"
+                        className={cn(detailSecondaryAction, 'shrink-0 self-center text-destructive hover:bg-destructive/10')}
                         onClick={() => {
                           void (async () => {
                             const ok = await confirm({
@@ -818,10 +855,36 @@ export function TaskDetailPanel({
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             </TabsContent>
           </div>
         </Tabs>
+    </>
+  )
+
+  if (presentation === 'dialog') {
+    return (
+      <Dialog open onOpenChange={(o) => !o && onClose()}>
+        <DialogContent
+          showCloseButton
+          className={cn(
+            'flex h-[80vh] max-h-[80dvh] w-[min(92vw,52rem)] max-w-[min(92vw,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(92vw,52rem)]',
+            'rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5 dark:bg-popover dark:ring-white/10',
+          )}
+        >
+          {panel}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="right"
+        className="flex h-full w-full flex-col gap-0 border-l border-border/70 bg-popover p-0 shadow-[-24px_0_48px_-24px_rgba(0,0,0,0.18)] sm:max-w-[560px] dark:shadow-[-24px_0_56px_-24px_rgba(0,0,0,0.55)]"
+      >
+        {panel}
       </SheetContent>
     </Sheet>
   )

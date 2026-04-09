@@ -831,6 +831,7 @@ export function ProjectPage() {
           projectId={pid}
           task={taskForDetailPanel}
           allTasks={tasks}
+          presentation={activeView === 'board' ? 'dialog' : 'sheet'}
           onClose={() => setSelected(null)}
           onSaved={() => {
             /* Panel reads `taskForDetailPanel` from the live `tasks` subscription. */

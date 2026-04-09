@@ -2,6 +2,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  useDndMonitor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -9,7 +10,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import type React from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { IconPlus } from "../components/icons";
 import type { SectionDoc, StatusDoc, TaskDoc } from "../types/models";
 import {
@@ -22,6 +23,29 @@ import {
   type TaskMovePatch,
 } from "../utils/taskDnD";
 import clsx from "clsx";
+
+/** Ignore the click that sometimes follows a drag on this task (whole-card drag + click to open). */
+function useSuppressClickAfterOwnDrag(taskId: string) {
+  const suppressRef = useRef(false);
+  const dragId = taskDragId(taskId);
+  useDndMonitor({
+    onDragEnd(event) {
+      if (String(event.active.id) !== dragId) return;
+      suppressRef.current = true;
+      window.setTimeout(() => {
+        suppressRef.current = false;
+      }, 0);
+    },
+    onDragCancel(event) {
+      if (String(event.active.id) !== dragId) return;
+      suppressRef.current = true;
+      window.setTimeout(() => {
+        suppressRef.current = false;
+      }, 0);
+    },
+  });
+  return suppressRef;
+}
 
 const COLUMN_WIDTH = "min-w-[288px] w-[288px]";
 
@@ -251,6 +275,7 @@ function RootTaskCard({
   onTaskClick: (t: TaskDoc) => void;
   statuses: StatusDoc[];
 }) {
+  const suppressOpenClickRef = useSuppressClickAfterOwnDrag(task.id);
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: parentTaskDropId(task.id),
   });
@@ -274,8 +299,11 @@ function RootTaskCard({
       }
     : undefined;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") onTaskClick(task);
+  const handleOpenKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onTaskClick(task);
+    }
   };
 
   return (
@@ -291,11 +319,14 @@ function RootTaskCard({
           isOver &&
             "ring-2 ring-share/35 outline-2 outline-dashed outline-share/70 outline-offset-2",
         )}
-        onDoubleClick={() => onTaskClick(task)}
-        onKeyDown={handleKeyDown}
+        onClick={() => {
+          if (suppressOpenClickRef.current) return;
+          onTaskClick(task);
+        }}
+        onKeyDown={handleOpenKeyDown}
         role="button"
         tabIndex={0}
-        title="Drag to move or nest. Double-click to open."
+        title="Click to open. Drag to move or nest. Drop tasks here to nest."
       >
         <div className="flex min-w-0 flex-col gap-2">
           {task.statusId ? (
@@ -331,6 +362,7 @@ function SubtaskCard({
   onTaskClick: (t: TaskDoc) => void;
   statuses: StatusDoc[];
 }) {
+  const suppressOpenClickRef = useSuppressClickAfterOwnDrag(task.id);
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: taskDragId(task.id) });
   const style = transform
@@ -346,14 +378,22 @@ function SubtaskCard({
       style={style}
       {...listeners}
       {...attributes}
-      className="min-w-0 cursor-grab overflow-hidden rounded-lg border border-border-subtle/70 bg-app/90 px-2.5 py-2 text-[12px] font-medium shadow-sm transition-shadow active:cursor-grabbing hover:shadow"
-      onDoubleClick={() => onTaskClick(task)}
+      className={clsx(
+        "min-w-0 cursor-grab overflow-hidden rounded-lg border border-border-subtle/70 bg-app/90 px-2.5 py-2 text-[12px] font-medium shadow-sm transition-shadow active:cursor-grabbing hover:shadow",
+      )}
+      onClick={() => {
+        if (suppressOpenClickRef.current) return;
+        onTaskClick(task);
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onTaskClick(task);
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onTaskClick(task);
+        }
       }}
-      title="Drag onto another card or section."
+      title="Click to open. Drag onto another card or section."
     >
       <div className="flex min-w-0 flex-col gap-1">
         {task.statusId ? (
@@ -379,7 +419,7 @@ function StatusTag({
   if (!s) return null;
   return (
     <span
-      className="inline-flex w-fit max-w-full items-center rounded-md border border-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm"
+      className="inline-flex w-fit max-w-full items-center rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm"
       style={{
         backgroundColor: s.color,
       }}
