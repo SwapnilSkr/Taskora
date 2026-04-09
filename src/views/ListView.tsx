@@ -1,6 +1,8 @@
 import clsx from "clsx";
+import { startOfDay } from "date-fns";
 import { CheckIcon } from "lucide-react";
 import type React from "react";
+import type { Matcher } from "react-day-picker";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   DndContext,
@@ -36,6 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -88,6 +91,85 @@ type Props = {
   onDeleteSection: (sectionId: string) => void;
   onMoveTask: (taskId: string, patch: TaskMovePatch) => void;
 };
+
+/** Controlled popover + shadcn Calendar; closes on pick (native date input remounted the tree and broke dismiss). */
+function ListRowDatePopover({
+  label,
+  value,
+  onCommit,
+  onOverlayClosed,
+  ariaLabel,
+  triggerClassName,
+  calendarDisabled,
+  children,
+}: {
+  label: string;
+  value: Date | null;
+  onCommit: (ymd: string | null) => void;
+  onOverlayClosed: () => void;
+  ariaLabel: string;
+  triggerClassName: string;
+  /** When set, grey out days outside the allowed range (pair with the opposite date). */
+  calendarDisabled?: Matcher | Matcher[];
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) onOverlayClosed();
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          data-row-action
+          className={triggerClassName}
+          aria-label={ariaLabel}
+        >
+          {children}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        {...listRowPortaledOverlayHandlers}
+        align="end"
+        sideOffset={4}
+        collisionPadding={8}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        className="w-auto max-w-[min(320px,calc(100vw-1.5rem))] gap-2 p-2"
+      >
+        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </div>
+        <Calendar
+          mode="single"
+          selected={value ?? undefined}
+          onSelect={(d) => {
+            if (d) onCommit(dateToInputValue(d));
+            setOpen(false);
+            onOverlayClosed();
+          }}
+          disabled={calendarDisabled}
+          initialFocus
+        />
+        <button
+          type="button"
+          className="cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
+          onClick={() => {
+            onCommit(null);
+            setOpen(false);
+            onOverlayClosed();
+          }}
+        >
+          Clear {label.toLowerCase()}
+        </button>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function groupKey(
   t: TaskDoc,
@@ -947,111 +1029,53 @@ function TaskRowMetaColumns({
       </td>
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
-          <Popover
-            onOpenChange={(open) => {
-              if (!open) onOverlayClosed();
-            }}
+          <ListRowDatePopover
+            label="Start date"
+            value={start}
+            onCommit={(ymd) => onStartChange(t.id, ymd)}
+            onOverlayClosed={onOverlayClosed}
+            ariaLabel="Start date"
+            calendarDisabled={
+              due ? { after: startOfDay(due) } : undefined
+            }
+            triggerClassName={clsx(
+              "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+              start && "is-set",
+            )}
           >
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                data-row-action
-                className={clsx(
-                  "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
-                  start && "is-set",
-                )}
-                aria-label="Start date"
-              >
-                <IconCalendar width={14} height={14} className="shrink-0" />
-                <span className="truncate">{fmtDate(start)}</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              {...listRowPortaledOverlayHandlers}
-              align="end"
-              sideOffset={4}
-              collisionPadding={8}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-              className="w-auto min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] gap-1.5 p-2"
-            >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Start date
-              </div>
-              <input
-                key={`${t.id}-start-${t.startDate ?? ""}`}
-                type="date"
-                className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
-                defaultValue={dateToInputValue(start)}
-                onChange={(e) => onStartChange(t.id, e.target.value || null)}
-              />
-              <button
-                type="button"
-                className="cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
-                onClick={() => onStartChange(t.id, null)}
-              >
-                Clear start date
-              </button>
-            </PopoverContent>
-          </Popover>
+            <IconCalendar width={14} height={14} className="shrink-0" />
+            <span className="truncate">{fmtDate(start)}</span>
+          </ListRowDatePopover>
         </div>
       </td>
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
-          <Popover
-            onOpenChange={(open) => {
-              if (!open) onOverlayClosed();
-            }}
+          <ListRowDatePopover
+            label="Due date"
+            value={due}
+            onCommit={(ymd) => onDueChange(t.id, ymd)}
+            onOverlayClosed={onOverlayClosed}
+            ariaLabel="Due date"
+            calendarDisabled={
+              start ? { before: startOfDay(start) } : undefined
+            }
+            triggerClassName={clsx(
+              "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
+              due && "is-set",
+            )}
           >
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                data-row-action
-                className={clsx(
-                  "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
-                  due && "is-set",
-                )}
-                aria-label="Due date"
-              >
-                <IconCalendar width={14} height={14} className="shrink-0" />
-                <span
-                  className={clsx(
-                    "truncate",
-                    dueState !== "none" && "font-medium normal-case",
-                    dueState === "overdue" && "text-soft-danger",
-                    dueState === "soon" && "text-prio-med-fg",
-                  )}
-                >
-                  {fmtDate(due)}
-                </span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              {...listRowPortaledOverlayHandlers}
-              align="end"
-              sideOffset={4}
-              collisionPadding={8}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-              className="w-auto min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] gap-1.5 p-2"
+            <IconCalendar width={14} height={14} className="shrink-0" />
+            <span
+              className={clsx(
+                "truncate",
+                dueState !== "none" && "font-medium normal-case",
+                dueState === "overdue" && "text-soft-danger",
+                dueState === "soon" && "text-prio-med-fg",
+              )}
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Due date
-              </div>
-              <input
-                key={`${t.id}-due-${t.dueDate ?? ""}`}
-                type="date"
-                className="w-full rounded-card border border-border bg-app px-3 py-2 text-[13px]"
-                defaultValue={dateToInputValue(due)}
-                onChange={(e) => onDueChange(t.id, e.target.value || null)}
-              />
-              <button
-                type="button"
-                className="cursor-pointer border-none bg-transparent p-0 text-left text-[12px] text-share hover:underline"
-                onClick={() => onDueChange(t.id, null)}
-              >
-                Clear due date
-              </button>
-            </PopoverContent>
-          </Popover>
+              {fmtDate(due)}
+            </span>
+          </ListRowDatePopover>
         </div>
       </td>
       <td className="align-middle">
