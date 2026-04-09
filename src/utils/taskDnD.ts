@@ -107,3 +107,42 @@ export function resolveTaskDrop(
 
   return null
 }
+
+/** Re-applies in-flight move patches when the Firestore snapshot is still behind the client. */
+export function mergeTasksWithPendingMoves(
+  incoming: TaskDoc[],
+  pending: Map<string, TaskMovePatch>,
+): TaskDoc[] {
+  if (pending.size === 0) return incoming
+  return incoming.map((t) => {
+    const p = pending.get(t.id)
+    if (!p) return t
+    return {
+      ...t,
+      sectionId: p.sectionId,
+      parentTaskId: p.parentTaskId,
+      sortOrder: p.sortOrder,
+    }
+  })
+}
+
+/** Drop pending rows once the server document matches what we wrote (or the task vanished). */
+export function clearPendingMovesConfirmedByServer(
+  incoming: TaskDoc[],
+  pending: Map<string, TaskMovePatch>,
+) {
+  for (const [id, patch] of [...pending.entries()]) {
+    const t = incoming.find((x) => x.id === id)
+    if (!t) {
+      pending.delete(id)
+      continue
+    }
+    if (
+      t.sectionId === patch.sectionId &&
+      t.parentTaskId === patch.parentTaskId &&
+      t.sortOrder === patch.sortOrder
+    ) {
+      pending.delete(id)
+    }
+  }
+}

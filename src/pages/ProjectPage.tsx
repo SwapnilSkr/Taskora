@@ -45,6 +45,11 @@ import type {
   TaskDoc,
 } from '../types/models'
 import type { GroupMode, SortMode } from '../views/ListView'
+import {
+  clearPendingMovesConfirmedByServer,
+  mergeTasksWithPendingMoves,
+  type TaskMovePatch,
+} from '../utils/taskDnD'
 import { Button } from '@/components/ui/button'
 
 const OverviewView = lazy(() =>
@@ -110,6 +115,7 @@ export function ProjectPage() {
   const [filterHideCompleted, setFilterHideCompleted] = useState(false)
   const [multiSelectMode, setMultiSelectMode] = useState(false)
   const popRef = useRef<HTMLDivElement | null>(null)
+  const taskMovePendingRef = useRef<Map<string, TaskMovePatch>>(new Map())
 
   const activeView: ProjectView =
     view && VIEWS.some((v) => v.id === view) ? view : 'list'
@@ -121,8 +127,12 @@ export function ProjectPage() {
 
   useEffect(() => {
     if (!projectId || !uid) return
+    taskMovePendingRef.current.clear()
     const u = subscribeSections(uid, projectId, setSections)
-    const v = subscribeTasks(uid, projectId, setTasks)
+    const v = subscribeTasks(uid, projectId, (incoming) => {
+      clearPendingMovesConfirmedByServer(incoming, taskMovePendingRef.current)
+      setTasks(mergeTasksWithPendingMoves(incoming, taskMovePendingRef.current))
+    })
     const w = subscribeStatuses(uid, setStatuses)
     return () => {
       u()
@@ -194,6 +204,55 @@ export function ProjectPage() {
       return next
     })
   }, [])
+
+  const runOptimisticTaskMove = useCallback(
+    (taskId: string, patch: TaskMovePatch) => {
+      if (!uid || !projectId) return
+      let prevFields: {
+        sectionId: string
+        parentTaskId: string | null
+        sortOrder: number
+      } | null = null
+
+      taskMovePendingRef.current.set(taskId, patch)
+      setTasks((old) => {
+        const prev = old.find((t) => t.id === taskId)
+        if (!prev) return old
+        prevFields = {
+          sectionId: prev.sectionId,
+          parentTaskId: prev.parentTaskId,
+          sortOrder: prev.sortOrder,
+        }
+        return old.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
+      })
+
+      if (!prevFields) {
+        taskMovePendingRef.current.delete(taskId)
+        return
+      }
+
+      void updateTask(uid, projectId, taskId, patch).catch((err: unknown) => {
+        taskMovePendingRef.current.delete(taskId)
+        const revert = prevFields!
+        setTasks((old) =>
+          old.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  sectionId: revert.sectionId,
+                  parentTaskId: revert.parentTaskId,
+                  sortOrder: revert.sortOrder,
+                }
+              : t,
+          ),
+        )
+        const msg =
+          err instanceof Error ? err.message : 'Could not move this task.'
+        void alert({ title: 'Move blocked', message: msg })
+      })
+    },
+    [uid, projectId, alert],
+  )
 
   if (!projectId || !uid || !project) {
     return (
@@ -769,13 +828,7 @@ export function ProjectPage() {
               void handleRequestRenameSection(sid, name)
             }
             onDeleteSection={(sid) => void handleDeleteSection(sid)}
-            onMoveTask={(taskId, patch) => {
-              void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
-                const msg =
-                  err instanceof Error ? err.message : 'Could not move this task.'
-                void alert({ title: 'Move blocked', message: msg })
-              })
-            }}
+            onMoveTask={runOptimisticTaskMove}
           />
         ) : null}
         {activeView === 'board' ? (
@@ -786,13 +839,16 @@ export function ProjectPage() {
             tasksForMove={tasks}
             onTaskClick={setSelected}
             onAddSection={() => void onAddSection()}
-            onMoveTask={(taskId, patch) => {
-              void updateTask(uid, pid, taskId, patch).catch((err: unknown) => {
-                const msg =
-                  err instanceof Error ? err.message : 'Could not move this task.'
-                void alert({ title: 'Move blocked', message: msg })
-              })
-            }}
+            onMoveTask={runOptimisticTaskMove}
+            onAddTask={(sid) => void onAddTask(sid)}
+            onAddSubtask={(parentId, sectionId, title) =>
+              void handleAddSubtaskQuick(parentId, sectionId, title)
+            }
+            onDeleteTask={(id) => void handleDeleteTaskRow(id)}
+            onRequestRenameSection={(sid, name) =>
+              void handleRequestRenameSection(sid, name)
+            }
+            onDeleteSection={(sid) => void handleDeleteSection(sid)}
           />
         ) : null}
         {activeView === 'timeline' ? (

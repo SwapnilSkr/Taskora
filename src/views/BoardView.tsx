@@ -11,7 +11,15 @@ import {
 } from "@dnd-kit/core";
 import type React from "react";
 import { useCallback, useRef, useState } from "react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { IconPlus } from "../components/icons";
+import { useModals } from "../context/ModalContext";
 import type { SectionDoc, StatusDoc, TaskDoc } from "../types/models";
 import {
   parseTaskDragId,
@@ -49,8 +57,154 @@ function useSuppressClickAfterOwnDrag(taskId: string) {
 
 const COLUMN_WIDTH = "min-w-[288px] w-[288px]";
 
+/** Column inner width: 288px − horizontal padding (`px-3` × 2). Fallback when rect isn’t ready. */
+const BOARD_CARD_FALLBACK_WIDTH = 288 - 24;
+
 const COLUMN_HELP =
   "Drag cards between columns. Drop on a card to nest as a subtask; drop on the column to promote to a top-level task in this section.";
+
+function BoardSectionContextMenu({
+  section,
+  onAddTask,
+  onRequestRenameSection,
+  onDeleteSection,
+  children,
+}: {
+  section: SectionDoc;
+  onAddTask: (sectionId: string) => void;
+  onRequestRenameSection: (sectionId: string, currentName: string) => void;
+  onDeleteSection: (sectionId: string) => void;
+  children: React.ReactElement;
+}) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => onAddTask(section.id)}>
+          Add task
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => onRequestRenameSection(section.id, section.name)}
+        >
+          Rename section…
+        </ContextMenuItem>
+        <ContextMenuItem
+          variant="destructive"
+          onSelect={() => void onDeleteSection(section.id)}
+        >
+          Delete section…
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function BoardTaskContextMenu({
+  task,
+  allowAddSubtask,
+  onTaskClick,
+  onAddSubtask,
+  onDeleteTask,
+  children,
+}: {
+  task: TaskDoc;
+  allowAddSubtask: boolean;
+  onTaskClick: (t: TaskDoc) => void;
+  onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  children: React.ReactElement;
+}) {
+  const { prompt } = useModals();
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => onTaskClick(task)}>
+          Open details
+        </ContextMenuItem>
+        {allowAddSubtask ? (
+          <ContextMenuItem
+            onSelect={() => {
+              void (async () => {
+                const title = await prompt({
+                  title: "New subtask",
+                  message: "Name this subtask.",
+                  label: "Subtask name",
+                  defaultValue: "New subtask",
+                  placeholder: "e.g. Draft outline",
+                  confirmLabel: "Create",
+                });
+                if (title?.trim()) {
+                  onAddSubtask(task.id, task.sectionId, title.trim());
+                }
+              })();
+            }}
+          >
+            Add subtask
+          </ContextMenuItem>
+        ) : null}
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onSelect={() => void onDeleteTask(task.id)}
+        >
+          Delete task…
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function BoardDragPreview({
+  task,
+  statuses,
+  widthPx,
+}: {
+  task: TaskDoc;
+  statuses: StatusDoc[];
+  widthPx: number;
+}) {
+  const isSubtask = Boolean(task.parentTaskId);
+  const title = task.title.trim() || "Untitled task";
+  return (
+    <div
+      style={{
+        width: widthPx,
+        maxWidth: "min(calc(100vw - 2rem), 360px)",
+        boxSizing: "border-box",
+      }}
+      className={clsx(
+        "box-border cursor-grabbing overflow-hidden shadow-2xl will-change-transform",
+        "origin-[50%_50%] scale-[1.02]",
+        "border",
+        "ring-2 ring-black/6 dark:ring-white/12",
+        "backdrop-saturate-150 backdrop-blur-md",
+        isSubtask
+          ? "rounded-lg border-border-subtle/80 bg-app/95 px-2.5 py-2 ring-inset"
+          : "rounded-xl border-border-subtle bg-raised/98 px-3 py-3 ring-inset",
+      )}
+    >
+      <div
+        className={clsx(
+          "flex min-w-0 flex-col",
+          isSubtask ? "gap-1" : "gap-2",
+          isSubtask
+            ? "text-[12px] font-medium tracking-tight text-foreground/95"
+            : "text-[13px] font-semibold tracking-tight text-foreground",
+        )}
+      >
+        {task.statusId ? (
+          <StatusTag sid={task.statusId} statuses={statuses} />
+        ) : null}
+        <span className="min-w-0 leading-snug" title={title}>
+          {title}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   sections: SectionDoc[];
@@ -59,6 +213,11 @@ type Props = {
   tasksForMove: TaskDoc[];
   onTaskClick: (t: TaskDoc) => void;
   onMoveTask: (taskId: string, patch: TaskMovePatch) => void;
+  onAddTask: (sectionId: string) => void;
+  onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  onRequestRenameSection: (sectionId: string, currentName: string) => void;
+  onDeleteSection: (sectionId: string) => void;
   /** When set, an “add column” panel is shown as the last board column (board view). */
   onAddSection?: () => void;
 };
@@ -70,12 +229,18 @@ export function BoardView({
   tasksForMove,
   onTaskClick,
   onMoveTask,
+  onAddTask,
+  onAddSubtask,
+  onDeleteTask,
+  onRequestRenameSection,
+  onDeleteSection,
   onAddSection,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overlayWidth, setOverlayWidth] = useState<number | null>(null);
 
   const roots = tasks.filter((t) => !t.parentTaskId);
   const activeTask = activeId
@@ -87,6 +252,7 @@ export function BoardView({
       const draggedId = parseTaskDragId(e.active.id);
       const overRaw = e.over?.id != null ? String(e.over.id) : null;
       setActiveId(null);
+      setOverlayWidth(null);
       if (!draggedId || !overRaw) return;
       const patch = resolveTaskDrop(tasksForMove, draggedId, overRaw);
       if (!patch) return;
@@ -101,8 +267,16 @@ export function BoardView({
       collisionDetection={taskDropCollisionDetection}
       onDragStart={(e) => {
         setActiveId(parseTaskDragId(e.active.id));
+        const initial = e.active.rect.current.initial;
+        const w = initial?.width ?? 0;
+        setOverlayWidth(
+          w > 0 ? Math.round(w) : BOARD_CARD_FALLBACK_WIDTH,
+        );
       }}
-      onDragCancel={() => setActiveId(null)}
+      onDragCancel={() => {
+        setActiveId(null);
+        setOverlayWidth(null);
+      }}
       onDragEnd={(e) => void onDragEnd(e)}
     >
       <div
@@ -124,6 +298,11 @@ export function BoardView({
               allTasks={tasks}
               onTaskClick={onTaskClick}
               statuses={statuses}
+              onAddTask={onAddTask}
+              onAddSubtask={onAddSubtask}
+              onDeleteTask={onDeleteTask}
+              onRequestRenameSection={onRequestRenameSection}
+              onDeleteSection={onDeleteSection}
             />
           ))}
           {onAddSection ? (
@@ -131,23 +310,13 @@ export function BoardView({
           ) : null}
         </div>
       </div>
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={null} className="z-9999">
         {activeTask ? (
-          <div
-            className="box-border w-max max-w-[min(var(--spacing-sidebar),calc(100vw-2rem))] min-w-[200px] cursor-grabbing overflow-hidden rounded-xl border border-border-subtle bg-raised/95 px-3 py-3 shadow-xl ring-1 ring-black/5 backdrop-blur-sm dark:ring-white/10"
-          >
-            <div className="flex min-w-0 flex-col gap-2 text-[13px] font-semibold tracking-tight text-foreground">
-              {activeTask.statusId ? (
-                <StatusTag sid={activeTask.statusId} statuses={statuses} />
-              ) : null}
-              <span
-                className="min-w-0 truncate leading-snug"
-                title={activeTask.title || undefined}
-              >
-                {activeTask.title.trim() || "Untitled task"}
-              </span>
-            </div>
-          </div>
+          <BoardDragPreview
+            task={activeTask}
+            statuses={statuses}
+            widthPx={overlayWidth ?? BOARD_CARD_FALLBACK_WIDTH}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>
@@ -200,29 +369,45 @@ function Column({
   allTasks,
   onTaskClick,
   statuses,
+  onAddTask,
+  onAddSubtask,
+  onDeleteTask,
+  onRequestRenameSection,
+  onDeleteSection,
 }: {
   section: SectionDoc;
   roots: TaskDoc[];
   allTasks: TaskDoc[];
   onTaskClick: (t: TaskDoc) => void;
   statuses: StatusDoc[];
+  onAddTask: (sectionId: string) => void;
+  onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  onRequestRenameSection: (sectionId: string, currentName: string) => void;
+  onDeleteSection: (sectionId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: sectionDropId(section.id) });
   const count = roots.length;
 
   return (
-    <div
-      className={clsx(
-        COLUMN_WIDTH,
-        "flex shrink-0 flex-col rounded-2xl border border-border-subtle bg-board shadow-sm ring-1 ring-black/4 transition-[box-shadow,outline] dark:ring-white/6",
-        isOver &&
-          "ring-2 ring-share/40 outline-2 outline-dashed outline-share/60 outline-offset-0",
-      )}
-      ref={setNodeRef}
-      data-over={isOver ? "true" : "false"}
-      role="listitem"
-      title={COLUMN_HELP}
+    <BoardSectionContextMenu
+      section={section}
+      onAddTask={onAddTask}
+      onRequestRenameSection={onRequestRenameSection}
+      onDeleteSection={onDeleteSection}
     >
+      <div
+        className={clsx(
+          COLUMN_WIDTH,
+          "flex shrink-0 flex-col rounded-2xl border border-border-subtle bg-board shadow-sm ring-1 ring-black/4 transition-[box-shadow,outline] dark:ring-white/6",
+          isOver &&
+            "ring-2 ring-share/40 outline-2 outline-dashed outline-share/60 outline-offset-0",
+        )}
+        ref={setNodeRef}
+        data-over={isOver ? "true" : "false"}
+        role="listitem"
+        title={COLUMN_HELP}
+      >
       <div className="border-b border-border-subtle/80 px-3.5 pb-3 pt-3.5">
         <div className="flex items-start justify-between gap-2">
           <h3 className="min-w-0 text-[13px] font-semibold leading-tight tracking-tight text-foreground">
@@ -256,11 +441,14 @@ function Column({
                 .sort((a, b) => a.sortOrder - b.sortOrder)}
               onTaskClick={onTaskClick}
               statuses={statuses}
+              onAddSubtask={onAddSubtask}
+              onDeleteTask={onDeleteTask}
             />
           ))
         )}
       </div>
     </div>
+    </BoardSectionContextMenu>
   );
 }
 
@@ -269,11 +457,15 @@ function RootTaskCard({
   subtasks,
   onTaskClick,
   statuses,
+  onAddSubtask,
+  onDeleteTask,
 }: {
   task: TaskDoc;
   subtasks: TaskDoc[];
   onTaskClick: (t: TaskDoc) => void;
   statuses: StatusDoc[];
+  onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }) {
   const suppressOpenClickRef = useSuppressClickAfterOwnDrag(task.id);
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -308,35 +500,43 @@ function RootTaskCard({
 
   return (
     <div className="mb-0.5">
-      <div
-        ref={setRefs}
-        style={style}
-        {...listeners}
-        {...attributes}
-        className={clsx(
-          "min-w-0 cursor-grab overflow-hidden rounded-xl border border-border-subtle bg-raised px-3 py-3 text-[13px] font-semibold tracking-tight shadow-sm transition-shadow active:cursor-grabbing",
-          "hover:border-border-subtle hover:shadow-md",
-          isOver &&
-            "ring-2 ring-share/35 outline-2 outline-dashed outline-share/70 outline-offset-2",
-        )}
-        onClick={() => {
-          if (suppressOpenClickRef.current) return;
-          onTaskClick(task);
-        }}
-        onKeyDown={handleOpenKeyDown}
-        role="button"
-        tabIndex={0}
-        title="Click to open. Drag to move or nest. Drop tasks here to nest."
+      <BoardTaskContextMenu
+        task={task}
+        allowAddSubtask
+        onTaskClick={onTaskClick}
+        onAddSubtask={onAddSubtask}
+        onDeleteTask={onDeleteTask}
       >
-        <div className="flex min-w-0 flex-col gap-2">
-          {task.statusId ? (
-            <StatusTag sid={task.statusId} statuses={statuses} />
-          ) : null}
-          <span className="min-w-0 leading-snug text-foreground">
-            {task.title.trim() || "Untitled task"}
-          </span>
+        <div
+          ref={setRefs}
+          style={style}
+          {...listeners}
+          {...attributes}
+          className={clsx(
+            "min-w-0 cursor-grab overflow-hidden rounded-xl border border-border-subtle bg-raised px-3 py-3 text-[13px] font-semibold tracking-tight shadow-sm transition-shadow active:cursor-grabbing",
+            "hover:border-border-subtle hover:shadow-md",
+            isOver &&
+              "ring-2 ring-share/35 outline-2 outline-dashed outline-share/70 outline-offset-2",
+          )}
+          onClick={() => {
+            if (suppressOpenClickRef.current) return;
+            onTaskClick(task);
+          }}
+          onKeyDown={handleOpenKeyDown}
+          role="button"
+          tabIndex={0}
+          title="Click to open. Drag to move or nest. Drop tasks here to nest."
+        >
+          <div className="flex min-w-0 flex-col gap-2">
+            {task.statusId ? (
+              <StatusTag sid={task.statusId} statuses={statuses} />
+            ) : null}
+            <span className="min-w-0 leading-snug text-foreground">
+              {task.title.trim() || "Untitled task"}
+            </span>
+          </div>
         </div>
-      </div>
+      </BoardTaskContextMenu>
       {subtasks.length > 0 ? (
         <div className="relative mt-2 space-y-1.5 border-l-2 border-border-subtle/90 pl-3">
           {subtasks.map((st) => (
@@ -345,6 +545,8 @@ function RootTaskCard({
               task={st}
               onTaskClick={onTaskClick}
               statuses={statuses}
+              onAddSubtask={onAddSubtask}
+              onDeleteTask={onDeleteTask}
             />
           ))}
         </div>
@@ -357,10 +559,14 @@ function SubtaskCard({
   task,
   onTaskClick,
   statuses,
+  onAddSubtask,
+  onDeleteTask,
 }: {
   task: TaskDoc;
   onTaskClick: (t: TaskDoc) => void;
   statuses: StatusDoc[];
+  onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }) {
   const suppressOpenClickRef = useSuppressClickAfterOwnDrag(task.id);
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -373,37 +579,45 @@ function SubtaskCard({
     : undefined;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      className={clsx(
-        "min-w-0 cursor-grab overflow-hidden rounded-lg border border-border-subtle/70 bg-app/90 px-2.5 py-2 text-[12px] font-medium shadow-sm transition-shadow active:cursor-grabbing hover:shadow",
-      )}
-      onClick={() => {
-        if (suppressOpenClickRef.current) return;
-        onTaskClick(task);
-      }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onTaskClick(task);
-        }
-      }}
-      title="Click to open. Drag onto another card or section."
+    <BoardTaskContextMenu
+      task={task}
+      allowAddSubtask={false}
+      onTaskClick={onTaskClick}
+      onAddSubtask={onAddSubtask}
+      onDeleteTask={onDeleteTask}
     >
-      <div className="flex min-w-0 flex-col gap-1">
-        {task.statusId ? (
-          <StatusTag sid={task.statusId} statuses={statuses} />
-        ) : null}
-        <span className="min-w-0 truncate text-foreground/95">
-          {task.title.trim() || "Untitled task"}
-        </span>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...listeners}
+        {...attributes}
+        className={clsx(
+          "min-w-0 cursor-grab overflow-hidden rounded-lg border border-border-subtle/70 bg-app/90 px-2.5 py-2 text-[12px] font-medium shadow-sm transition-shadow active:cursor-grabbing hover:shadow",
+        )}
+        onClick={() => {
+          if (suppressOpenClickRef.current) return;
+          onTaskClick(task);
+        }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onTaskClick(task);
+          }
+        }}
+        title="Click to open. Drag onto another card or section."
+      >
+        <div className="flex min-w-0 flex-col gap-1">
+          {task.statusId ? (
+            <StatusTag sid={task.statusId} statuses={statuses} />
+          ) : null}
+          <span className="min-w-0 truncate text-foreground/95">
+            {task.title.trim() || "Untitled task"}
+          </span>
+        </div>
       </div>
-    </div>
+    </BoardTaskContextMenu>
   );
 }
 
