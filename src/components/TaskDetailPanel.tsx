@@ -1,12 +1,12 @@
 import { Timestamp } from 'firebase/firestore'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useModals } from '@/context/ModalContext'
-import {
-  DescriptionWysiwyg,
-  type DescriptionWysiwygRef,
-} from '@/components/DescriptionWysiwyg'
 import { RichTextContent } from '@/components/RichTextContent'
+import {
+  TaskTipTapEditor,
+  type TaskTipTapEditorRef,
+} from '@/components/TaskTipTapEditor'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -26,7 +26,6 @@ import {
   SheetHeader,
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import {
   addComment,
   createTask,
@@ -42,11 +41,7 @@ import {
 import { uploadTaskFile, uploadTaskImageBlob } from '@/services/storage'
 import type { AttachmentMeta, CommentDoc, StatusDoc, TaskDoc } from '@/types/models'
 import { fmtDateFull, tsToDate } from '@/utils/format'
-import {
-  firstImageFromClipboard,
-  markdownImageLine,
-  textHasMarkdownImages,
-} from '@/utils/imagePaste'
+import { markdownImageLine } from '@/utils/imagePaste'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -90,8 +85,6 @@ const detailFieldLabel =
   'mb-1.5 block text-xs font-medium text-muted-foreground'
 const detailControl =
   'h-9 w-full rounded-lg border border-border/70 bg-background px-3 text-[13px] shadow-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 dark:bg-background/85'
-const detailWysiwyg =
-  'border-border/70 bg-background text-foreground min-h-[120px] w-full resize-y rounded-lg border px-3 py-2.5 text-[13px] leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]'
 const detailSecondaryAction =
   'h-auto rounded-md px-2 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground'
 
@@ -120,7 +113,8 @@ export function TaskDetailPanel({
   >('idle')
   const descImageInputRef = useRef<HTMLInputElement>(null)
   const commentImageInputRef = useRef<HTMLInputElement>(null)
-  const descWysiwygRef = useRef<DescriptionWysiwygRef>(null)
+  const descWysiwygRef = useRef<TaskTipTapEditorRef>(null)
+  const commentWysiwygRef = useRef<TaskTipTapEditorRef>(null)
   const lastCommittedDescription = useRef('')
 
   const taskIdForDescRef = task?.id
@@ -150,6 +144,11 @@ export function TaskDetailPanel({
     if (!task?.parentTaskId) return
     setTab((cur) => (cur === 'subtasks' ? 'details' : cur))
   }, [task?.id, task?.parentTaskId])
+
+  const taskId = task?.id
+  useLayoutEffect(() => {
+    setCommentText('')
+  }, [taskId])
 
   const subtasks = useMemo(
     () => allTasks.filter((x) => x.parentTaskId === task?.id),
@@ -251,7 +250,8 @@ export function TaskDetailPanel({
                   <div>
                     <h3 className={detailSectionHeading}>Description</h3>
                     <p className="mt-1 max-w-prose text-xs leading-relaxed text-muted-foreground">
-                      Rich text and markdown. Paste or attach images (⌘V / Ctrl+V).
+                      TipTap editor: headings, lists, links, and more. Paste or attach
+                      images (⌘V / Ctrl+V).
                     </p>
                   </div>
                   <input
@@ -294,13 +294,14 @@ export function TaskDetailPanel({
                     Attach image
                   </Button>
                 </div>
-                <DescriptionWysiwyg
+                <TaskTipTapEditor
                   ref={descWysiwygRef}
+                  documentKey={t.id}
                   markdown={t.description}
                   onMarkdownChange={(md) => void saveDescriptionNext(md)}
                   disabled={false}
                   placeholder="What is this task about?"
-                  className={detailWysiwyg}
+                  className="w-full"
                   onPasteImageBlob={async (blob) => {
                     setImageUploadBusy('desc')
                     try {
@@ -669,7 +670,7 @@ export function TaskDetailPanel({
                     <div>
                       <h3 className={detailSectionHeading}>New comment</h3>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Images: ⌘V / Ctrl+V or attach below
+                        Rich formatting and images — paste or attach below.
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
@@ -684,9 +685,8 @@ export function TaskDetailPanel({
                           e.target.value = ''
                           if (!f?.type.startsWith('image/')) return
                           const blobUrl = URL.createObjectURL(f)
-                          setCommentText(
-                            (prev) =>
-                              prev + markdownImageLine(blobUrl, f.name.slice(0, 40)),
+                          commentWysiwygRef.current?.appendImageMarkdown(
+                            markdownImageLine(blobUrl, f.name.slice(0, 40)),
                           )
                           void (async () => {
                             setImageUploadBusy('comment')
@@ -698,10 +698,9 @@ export function TaskDetailPanel({
                                 f,
                                 f.name,
                               )
-                              setCommentText((prev) =>
-                                prev.includes(blobUrl)
-                                  ? prev.replace(blobUrl, url)
-                                  : prev + markdownImageLine(url, f.name.slice(0, 40)),
+                              commentWysiwygRef.current?.replaceMarkdownUrl(
+                                blobUrl,
+                                url,
                               )
                             } finally {
                               URL.revokeObjectURL(blobUrl)
@@ -722,49 +721,30 @@ export function TaskDetailPanel({
                       </Button>
                     </div>
                   </div>
-                <Textarea
-                  className={cn(
-                    detailWysiwyg,
-                    'min-h-[100px] resize-y',
-                  )}
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onPaste={(e) => {
-                    const blob = firstImageFromClipboard(e.nativeEvent)
-                    if (!blob) return
-                    e.preventDefault()
-                    const blobUrl = URL.createObjectURL(blob)
-                    setCommentText((prev) => prev + markdownImageLine(blobUrl))
-                    void (async () => {
-                      setImageUploadBusy('comment')
-                      try {
-                        const url = await uploadTaskImageBlob(
-                          uid,
-                          projectId,
-                          t.id,
-                          blob,
-                          'paste',
-                        )
-                        setCommentText((prev) =>
-                          prev.includes(blobUrl)
-                            ? prev.replace(blobUrl, url)
-                            : prev + markdownImageLine(url),
-                        )
-                      } finally {
-                        URL.revokeObjectURL(blobUrl)
-                        setImageUploadBusy('idle')
-                      }
-                    })()
+                <TaskTipTapEditor
+                  ref={commentWysiwygRef}
+                  documentKey={t.id}
+                  markdown={commentText}
+                  onMarkdownChange={setCommentText}
+                  debounceMs={0}
+                  placeholder="Add a comment…"
+                  className="w-full"
+                  minEditorHeightClass="min-h-[100px]"
+                  onPasteImageBlob={async (blob) => {
+                    setImageUploadBusy('comment')
+                    try {
+                      return await uploadTaskImageBlob(
+                        uid,
+                        projectId,
+                        t.id,
+                        blob,
+                        'paste',
+                      )
+                    } finally {
+                      setImageUploadBusy('idle')
+                    }
                   }}
                 />
-                {textHasMarkdownImages(commentText) ? (
-                  <div className="mt-3">
-                    <div className={cn(detailFieldLabel, 'mb-2 mt-0')}>Preview</div>
-                    <div className="rounded-lg border border-border/60 bg-background/80 px-3 py-2.5 text-[13px] shadow-inner">
-                      <RichTextContent text={commentText} />
-                    </div>
-                  </div>
-                ) : null}
                 {imageUploadBusy === 'comment' ? (
                   <p className="text-muted-foreground mt-1.5 text-[11px] font-medium normal-case tracking-normal opacity-90">
                     Finishing image upload…
@@ -788,6 +768,7 @@ export function TaskDetailPanel({
                       user?.displayName ?? user?.email ?? null,
                     ).then(() => {
                       setCommentText('')
+                      commentWysiwygRef.current?.clearDocument()
                       onSaved()
                     })
                   }}
