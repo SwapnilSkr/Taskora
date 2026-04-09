@@ -130,7 +130,7 @@ export function WorkloadView({
             <div>
               <CardTitle className="text-lg">Capacity tapestry</CardTitle>
               <CardDescription className="mt-1.5 max-w-2xl text-[13px] leading-relaxed">
-                Asana-grade workload intuition: compare breadth of open tasks by assignee bucket,
+                Compare breadth of open tasks by assignee bucket,
                 layered with aggregate estimates for staffing conversations.
               </CardDescription>
             </div>

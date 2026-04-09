@@ -40,7 +40,7 @@ export function HomePage() {
         Home
       </h1>
       <p className="text-muted-foreground m-0 max-w-[640px] leading-relaxed">
-        Taskora mirrors the Asana-style workflows you expect — list, board, timeline, Gantt, approvals, workload, time tracking, dependencies, and attachments via Firebase Storage.
+        Taskora mirrors the workflows you expect — list, board, timeline, Gantt, approvals, workload, time tracking, dependencies, and attachments via Firebase Storage.
       </p>
 
       <div className="mt-7">

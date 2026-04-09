@@ -23,7 +23,7 @@ export function InboxPage() {
         Inbox
       </h1>
       <p className="m-0 max-w-[720px] text-muted-foreground">
-        Surfaces items needing attention — approvals (Asana Advanced) and blocked tasks. Extend with comment @mentions using the same task activity model.
+        Surfaces items needing attention — approvals and blocked tasks. Extend with comment @mentions using the same task activity model.
       </p>
       <div
         style={{
