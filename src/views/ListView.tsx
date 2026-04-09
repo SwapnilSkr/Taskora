@@ -54,6 +54,10 @@ import {
   fmtDate,
   tsToDate,
 } from "../utils/format";
+import {
+  listRowPortaledOverlayHandlers,
+  useTaskRowClick,
+} from "../utils/listTaskRowOpen";
 
 export type GroupMode = "section" | "assignee" | "due" | "status" | "priority";
 export type SortMode = "sortOrder" | "dueDate" | "priority" | "name";
@@ -278,13 +282,12 @@ function ListDragHandleCell({ taskId }: { taskId: string }) {
     <td
       className="px-0! align-middle first:pl-0"
       style={{ width: 32, verticalAlign: "middle" }}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
     >
       <div className="flex min-h-9 items-center justify-center px-0.5">
         <button
           ref={setNodeRef}
           type="button"
+          data-row-action
           className={clsx(
             "grid size-7 shrink-0 cursor-grab place-items-center rounded-md text-muted-foreground hover:bg-row-hover hover:text-fg active:cursor-grabbing",
             isDragging && "opacity-40",
@@ -292,7 +295,6 @@ function ListDragHandleCell({ taskId }: { taskId: string }) {
           title="Drag to a section header to move or promote; drag to a task name to nest under it"
           {...listeners}
           {...attributes}
-          onClick={(e) => e.stopPropagation()}
         >
           <span className="select-none text-[11px] leading-none opacity-60" aria-hidden>
             ⠿
@@ -832,6 +834,7 @@ function TaskRowMetaColumns({
   onDeleteTask,
   onTaskClick,
   onOpenSubtask,
+  onOverlayClosed,
   statuses,
 }: {
   t: TaskDoc;
@@ -844,6 +847,7 @@ function TaskRowMetaColumns({
   onDeleteTask: (taskId: string) => void;
   onTaskClick: (t: TaskDoc) => void;
   onOpenSubtask: () => void;
+  onOverlayClosed: () => void;
   statuses: StatusDoc[];
 }) {
   const start = tsToDate(t.startDate);
@@ -852,11 +856,6 @@ function TaskRowMetaColumns({
   const assigneeLabel =
     t.assigneeId === uid ? "You" : t.assigneeId ? "Member" : "Assign";
   const prios: TaskDoc["priority"][] = ["low", "medium", "high", "urgent"];
-
-  /** Keep row click-to-open; only real controls stop propagation. */
-  const stopRowClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
 
   return (
     <>
@@ -870,6 +869,7 @@ function TaskRowMetaColumns({
           <div className="flex min-h-9 items-center">
             <button
               type="button"
+              data-row-action
               className={clsx(
                 "subtask-quick-btn inline-flex max-w-full shrink-0 cursor-pointer flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground transition-colors duration-120 hover:bg-hover-surface hover:text-fg [&.is-set]:border-border-subtle [&.is-set]:text-fg",
                 subtaskQuickAdd.count > 0 && "is-set",
@@ -877,10 +877,7 @@ function TaskRowMetaColumns({
               title={
                 subtaskQuickAdd.count > 0 ? "Add another subtask" : "Add subtask"
               }
-              onClick={(e) => {
-                stopRowClick(e);
-                subtaskQuickAdd.onAdd();
-              }}
+              onClick={() => subtaskQuickAdd.onAdd()}
             >
               <IconPlus width={14} height={14} className="shrink-0" />
               <span className="truncate">
@@ -905,25 +902,31 @@ function TaskRowMetaColumns({
       )}
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (!open) onOverlayClosed();
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                data-row-action
                 className={clsx(
                   "inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground transition-colors duration-120 outline-none hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
                   t.assigneeId && "is-set",
                 )}
                 aria-label="Assign task"
-                onClick={stopRowClick}
               >
                 <IconUser width={14} height={14} className="shrink-0" />
                 <span className="truncate">{assigneeLabel}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
+              {...listRowPortaledOverlayHandlers}
               align="start"
               sideOffset={4}
               collisionPadding={8}
+              onCloseAutoFocus={(e) => e.preventDefault()}
               className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
             >
               <DropdownMenuItem
@@ -944,25 +947,31 @@ function TaskRowMetaColumns({
       </td>
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
-          <Popover>
+          <Popover
+            onOpenChange={(open) => {
+              if (!open) onOverlayClosed();
+            }}
+          >
             <PopoverTrigger asChild>
               <button
                 type="button"
+                data-row-action
                 className={clsx(
                   "start-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
                   start && "is-set",
                 )}
                 aria-label="Start date"
-                onClick={stopRowClick}
               >
                 <IconCalendar width={14} height={14} className="shrink-0" />
                 <span className="truncate">{fmtDate(start)}</span>
               </button>
             </PopoverTrigger>
             <PopoverContent
+              {...listRowPortaledOverlayHandlers}
               align="end"
               sideOffset={4}
               collisionPadding={8}
+              onCloseAutoFocus={(e) => e.preventDefault()}
               className="w-auto min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] gap-1.5 p-2"
             >
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -988,16 +997,20 @@ function TaskRowMetaColumns({
       </td>
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
-          <Popover>
+          <Popover
+            onOpenChange={(open) => {
+              if (!open) onOverlayClosed();
+            }}
+          >
             <PopoverTrigger asChild>
               <button
                 type="button"
+                data-row-action
                 className={clsx(
                   "due-cell-btn inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[12px] leading-none text-muted-foreground outline-none transition-colors duration-120 hover:bg-hover-surface hover:text-fg focus-visible:ring-2 focus-visible:ring-share/40 [&.is-set]:border-border-subtle [&.is-set]:text-fg",
                   due && "is-set",
                 )}
                 aria-label="Due date"
-                onClick={stopRowClick}
               >
                 <IconCalendar width={14} height={14} className="shrink-0" />
                 <span
@@ -1013,9 +1026,11 @@ function TaskRowMetaColumns({
               </button>
             </PopoverTrigger>
             <PopoverContent
+              {...listRowPortaledOverlayHandlers}
               align="end"
               sideOffset={4}
               collisionPadding={8}
+              onCloseAutoFocus={(e) => e.preventDefault()}
               className="w-auto min-w-[220px] max-w-[min(320px,calc(100vw-1.5rem))] gap-1.5 p-2"
             >
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -1041,22 +1056,28 @@ function TaskRowMetaColumns({
       </td>
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (!open) onOverlayClosed();
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                data-row-action
                 className="cursor-pointer rounded-pill border border-border-subtle bg-app px-2.5 py-1 text-[11px] font-bold uppercase leading-none tracking-wide text-fg outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[p=low]:border-transparent data-[p=low]:bg-prio-low-bg data-[p=low]:text-prio-low-fg data-[p=medium]:border-transparent data-[p=medium]:bg-prio-med-bg data-[p=medium]:text-prio-med-fg data-[p=high]:border-transparent data-[p=high]:bg-prio-high-bg data-[p=high]:text-prio-high-fg data-[p=urgent]:border-transparent data-[p=urgent]:bg-prio-urgent-bg data-[p=urgent]:text-prio-urgent-fg"
                 data-p={t.priority}
                 aria-label="Priority"
-                onClick={stopRowClick}
               >
                 {t.priority}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
+              {...listRowPortaledOverlayHandlers}
               align="end"
               sideOffset={4}
               collisionPadding={8}
+              onCloseAutoFocus={(e) => e.preventDefault()}
               className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
             >
               {prios.map((p) => (
@@ -1074,21 +1095,27 @@ function TaskRowMetaColumns({
       </td>
       <td className="align-middle">
         <div className="flex min-h-9 items-center justify-end">
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (!open) onOverlayClosed();
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                data-row-action
                 className="grid size-8 shrink-0 place-items-center rounded-card font-black tracking-wide text-muted-foreground transition-colors hover:bg-hover-surface hover:text-fg data-[state=open]:bg-hover-surface data-[state=open]:text-fg"
                 aria-label="Task actions"
-                onClick={stopRowClick}
               >
                 ···
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
+              {...listRowPortaledOverlayHandlers}
               align="end"
               sideOffset={4}
               collisionPadding={8}
+              onCloseAutoFocus={(e) => e.preventDefault()}
               className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
             >
               <DropdownMenuItem
@@ -1126,24 +1153,30 @@ function TaskStatusPickCell({
   t,
   statuses,
   onStatusChange,
+  onOverlayClosed,
 }: {
   t: TaskDoc;
   statuses: StatusDoc[];
   onStatusChange: (taskId: string, statusId: string | null) => void;
+  onOverlayClosed: () => void;
 }) {
   const ordered = [...statuses].sort((a, b) => a.sortOrder - b.sortOrder);
   return (
     <td className="align-middle">
       <div className="flex min-h-9 items-center justify-center">
-        <DropdownMenu>
+        <DropdownMenu
+          onOpenChange={(open) => {
+            if (!open) onOverlayClosed();
+          }}
+        >
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              data-row-action
               className="relative grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-placeholder bg-app shadow-[inset_0_0_0_2px_var(--color-app)] outline-none focus-visible:ring-2 focus-visible:ring-share/40 data-[done=true]:border-primary data-[done=true]:bg-primary data-[done=true]:text-primary-foreground data-[done=true]:shadow-none"
               data-done={t.completed ? "true" : "false"}
               title="Change status"
               aria-label="Change task status"
-              onClick={(e) => e.stopPropagation()}
             >
               {t.completed ? (
                 <CheckIcon
@@ -1155,9 +1188,11 @@ function TaskStatusPickCell({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
+            {...listRowPortaledOverlayHandlers}
             align="start"
             sideOffset={4}
             collisionPadding={8}
+            onCloseAutoFocus={(e) => e.preventDefault()}
             className="max-h-[min(320px,70vh)] min-w-[200px] max-w-[min(320px,calc(100vw-1.5rem))] overflow-y-auto"
           >
             <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -1230,8 +1265,11 @@ function TaskRow({
 }) {
   const orderedSubtasks = sortTasks(subtasks, sort);
 
+  const { rowClick, onOverlayClosed } = useTaskRowClick(onTaskClick);
+
   const handleTaskKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
       onTaskClick(t);
     }
   };
@@ -1247,21 +1285,17 @@ function TaskRow({
       >
         <tr
           className="group/task cursor-pointer [&>td]:border-b [&>td]:border-border-subtle [&>td]:align-middle [&>td]:px-3 [&>td]:py-2 hover:[&>td]:bg-row-hover"
-          onClick={() => onTaskClick(t)}
+          onClick={rowClick(t)}
         >
           {multiSelectMode ? (
-            <td
-              className="align-middle"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-            >
+            <td className="align-middle">
               <input
                 type="checkbox"
+                data-row-action
                 className="size-4 shrink-0 cursor-pointer rounded-full border-[1.5px] border-placeholder bg-app accent-share"
                 title="Select for bulk actions"
                 checked={selectedIds.has(t.id)}
                 onChange={() => onToggleSelect(t.id)}
-                onClick={(e) => e.stopPropagation()}
               />
             </td>
           ) : null}
@@ -1270,6 +1304,7 @@ function TaskRow({
             t={t}
             statuses={statuses}
             onStatusChange={onStatusChange}
+            onOverlayClosed={onOverlayClosed}
           />
           <TaskTitleDropCell
             task={t}
@@ -1292,6 +1327,7 @@ function TaskRow({
             onDeleteTask={onDeleteTask}
             onTaskClick={onTaskClick}
             onOpenSubtask={onOpenSubtask}
+            onOverlayClosed={onOverlayClosed}
             statuses={statuses}
           />
         </tr>
@@ -1301,6 +1337,7 @@ function TaskRow({
           si === orderedSubtasks.length - 1 && !subtaskComposerOpen;
         const handleSubKeyDown = (e: React.KeyboardEvent) => {
           if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
             onTaskClick(st);
           }
         };
@@ -1315,20 +1352,16 @@ function TaskRow({
           >
             <tr
               className="group/task cursor-pointer [&>td]:border-b [&>td]:border-border-subtle [&>td]:align-middle [&>td]:px-3 [&>td]:py-2 hover:[&>td]:bg-row-hover"
-              onClick={() => onTaskClick(st)}
+              onClick={rowClick(st)}
             >
               {multiSelectMode ? (
-                <td
-                  className="align-middle"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                >
+                <td className="align-middle">
                   <input
                     type="checkbox"
+                    data-row-action
                     className="size-4 shrink-0 cursor-pointer rounded-full border-[1.5px] border-placeholder bg-app accent-share"
                     checked={selectedIds.has(st.id)}
                     onChange={() => onToggleSelect(st.id)}
-                    onClick={(e) => e.stopPropagation()}
                   />
                 </td>
               ) : null}
@@ -1337,6 +1370,7 @@ function TaskRow({
                 t={st}
                 statuses={statuses}
                 onStatusChange={onStatusChange}
+                onOverlayClosed={onOverlayClosed}
               />
               <td
                 className="align-middle outline-none focus-visible:ring-2 focus-visible:ring-share/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -1366,6 +1400,7 @@ function TaskRow({
                 onDeleteTask={onDeleteTask}
                 onTaskClick={onTaskClick}
                 onOpenSubtask={onOpenSubtask}
+                onOverlayClosed={onOverlayClosed}
                 statuses={statuses}
               />
             </tr>
