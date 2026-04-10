@@ -74,10 +74,16 @@ export function AppLayout() {
           onOpenSearch={onOpenSearch}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
-          <Suspense fallback={<RoutePageFallback />}>
-            <Outlet />
-          </Suspense>
+        {/* Scroll on inner div: Radix sheet scroll-lock targets document; nesting avoids list scrollTop resets. */}
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div
+            data-app-scroll-root
+            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]"
+          >
+            <Suspense fallback={<RoutePageFallback />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </main>
       </div>
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />

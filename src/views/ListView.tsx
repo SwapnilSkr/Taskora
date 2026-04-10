@@ -114,6 +114,7 @@ function ListRowDatePopover({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
     <Popover
@@ -125,6 +126,7 @@ function ListRowDatePopover({
     >
       <PopoverTrigger asChild>
         <button
+          ref={triggerRef}
           type="button"
           data-row-action
           className={triggerClassName}
@@ -138,7 +140,12 @@ function ListRowDatePopover({
         align="end"
         sideOffset={4}
         collisionPadding={8}
-        onCloseAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          requestAnimationFrame(() => {
+            triggerRef.current?.focus({ preventScroll: true });
+          });
+        }}
         className="w-auto max-w-[min(320px,calc(100vw-1.5rem))] gap-2 p-2"
       >
         <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -263,7 +270,7 @@ function ListSectionContextMenu({
   children: React.ReactElement;
 }) {
   return (
-    <ContextMenu>
+    <ContextMenu modal={false}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => onAddTask(section.id)}>
@@ -302,7 +309,7 @@ function ListTaskContextMenu({
   children: React.ReactElement;
 }) {
   return (
-    <ContextMenu>
+    <ContextMenu modal={false}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => onTaskClick(task)}>
@@ -503,7 +510,7 @@ export function ListView({
   const subInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (inlineSub) subInputRef.current?.focus();
+    if (inlineSub) subInputRef.current?.focus({ preventScroll: true });
   }, [inlineSub]);
 
   const roots = tasks.filter((x) => !x.parentTaskId);
@@ -555,7 +562,7 @@ export function ListView({
                       >
                         + Add task
                       </button>
-                      <DropdownMenu>
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
@@ -985,6 +992,7 @@ function TaskRowMetaColumns({
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
           <DropdownMenu
+            modal={false}
             onOpenChange={(open) => {
               if (!open) onOverlayClosed();
             }}
@@ -1008,7 +1016,6 @@ function TaskRowMetaColumns({
               align="start"
               sideOffset={4}
               collisionPadding={8}
-              onCloseAutoFocus={(e) => e.preventDefault()}
               className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
             >
               <DropdownMenuItem
@@ -1081,6 +1088,7 @@ function TaskRowMetaColumns({
       <td className="align-middle">
         <div className="flex min-h-9 min-w-0 items-center">
           <DropdownMenu
+            modal={false}
             onOpenChange={(open) => {
               if (!open) onOverlayClosed();
             }}
@@ -1101,7 +1109,6 @@ function TaskRowMetaColumns({
               align="end"
               sideOffset={4}
               collisionPadding={8}
-              onCloseAutoFocus={(e) => e.preventDefault()}
               className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
             >
               {prios.map((p) => (
@@ -1120,6 +1127,7 @@ function TaskRowMetaColumns({
       <td className="align-middle">
         <div className="flex min-h-9 items-center justify-end">
           <DropdownMenu
+            modal={false}
             onOpenChange={(open) => {
               if (!open) onOverlayClosed();
             }}
@@ -1139,7 +1147,6 @@ function TaskRowMetaColumns({
               align="end"
               sideOffset={4}
               collisionPadding={8}
-              onCloseAutoFocus={(e) => e.preventDefault()}
               className="min-w-[180px] max-w-[min(320px,calc(100vw-1.5rem))]"
             >
               <DropdownMenuItem
@@ -1189,6 +1196,7 @@ function TaskStatusPickCell({
     <td className="align-middle">
       <div className="flex min-h-9 items-center justify-center">
         <DropdownMenu
+          modal={false}
           onOpenChange={(open) => {
             if (!open) onOverlayClosed();
           }}
@@ -1216,7 +1224,6 @@ function TaskStatusPickCell({
             align="start"
             sideOffset={4}
             collisionPadding={8}
-            onCloseAutoFocus={(e) => e.preventDefault()}
             className="max-h-[min(320px,70vh)] min-w-[200px] max-w-[min(320px,calc(100vw-1.5rem))] overflow-y-auto"
           >
             <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">

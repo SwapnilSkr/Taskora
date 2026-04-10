@@ -20,11 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-} from '@/components/ui/sheet'
+import { SheetHeader } from '@/components/ui/sheet'
+import { Dialog as DialogPrimitive } from 'radix-ui'
+import { XIcon } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   addComment,
@@ -861,13 +859,44 @@ export function TaskDetailPanel({
   }
 
   return (
-    <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex h-full w-full flex-col gap-0 border-l border-border/70 bg-popover p-0 shadow-[-24px_0_48px_-24px_rgba(0,0,0,0.18)] data-[side=right]:sm:max-w-[min(56vw,560px)] dark:shadow-[-24px_0_56px_-24px_rgba(0,0,0,0.55)]"
-      >
-        {panel}
-      </SheetContent>
-    </Sheet>
+    <DialogPrimitive.Root
+      modal={false}
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogPrimitive.Portal>
+        {/* Modal sheet overlay uses react-remove-scroll and breaks nested page scroll; plain backdrop + non-modal root avoids that. */}
+        <div
+          aria-hidden
+          className="fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs"
+        />
+        <DialogPrimitive.Content
+          className={cn(
+            'fixed inset-y-0 right-0 z-51 flex h-full w-3/4 max-w-full flex-col gap-0 overflow-hidden border-l border-border/70 bg-popover p-0 text-sm text-popover-foreground outline-none',
+            'shadow-[-24px_0_48px_-24px_rgba(0,0,0,0.18)] dark:shadow-[-24px_0_56px_-24px_rgba(0,0,0,0.55)]',
+            'duration-200 ease-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-right-10',
+            'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-right-10',
+            'sm:max-w-[min(56vw,560px)]',
+          )}
+        >
+          <DialogPrimitive.Title className="sr-only">
+            {t.title.trim() || 'Task details'}
+          </DialogPrimitive.Title>
+          {panel}
+          <DialogPrimitive.Close asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-3 right-3"
+              size="icon-sm"
+            >
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   )
 }

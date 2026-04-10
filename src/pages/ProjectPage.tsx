@@ -165,7 +165,7 @@ export function ProjectPage() {
     if (!projectId) return
     if (lastProjectId.current === projectId) return
     lastProjectId.current = projectId
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear bulk selection when opening another project
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- bulk selection is scoped to the current project route
     setSelectedIds(new Set())
   }, [projectId])
 
@@ -203,6 +203,10 @@ export function ProjectPage() {
       }
       return next
     })
+  }, [])
+
+  const selectTask = useCallback((task: TaskDoc) => {
+    setSelected(task)
   }, [])
 
   const runOptimisticTaskMove = useCallback(
@@ -807,7 +811,7 @@ export function ProjectPage() {
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             onSetManySelected={setManySelected}
-            onTaskClick={setSelected}
+            onTaskClick={selectTask}
             onStatusChange={(taskId, statusId) => {
               const s = statuses.find((x) => x.id === statusId)
               void updateTask(uid, pid, taskId, {
@@ -837,7 +841,7 @@ export function ProjectPage() {
             statuses={statuses}
             tasks={filteredTasks}
             tasksForMove={tasks}
-            onTaskClick={setSelected}
+            onTaskClick={selectTask}
             onAddSection={() => void onAddSection()}
             onMoveTask={runOptimisticTaskMove}
             onAddTask={(sid) => void onAddTask(sid)}
@@ -855,14 +859,14 @@ export function ProjectPage() {
           <TimelineViewTimeline
             tasks={filteredTasks}
             sections={sections}
-            onTaskClick={setSelected}
+            onTaskClick={selectTask}
           />
         ) : null}
         {activeView === 'dashboard' ? (
           <DashboardView tasks={filteredTasks} statuses={statuses} />
         ) : null}
         {activeView === 'gantt' ? (
-          <GanttView tasks={filteredTasks} onTaskClick={setSelected} />
+          <GanttView tasks={filteredTasks} onTaskClick={selectTask} />
         ) : null}
         {activeView === 'workload' ? (
           <WorkloadView tasks={filteredTasks} uid={uid} />
@@ -892,7 +896,7 @@ export function ProjectPage() {
           onSaved={() => {
             /* Panel reads `taskForDetailPanel` from the live `tasks` subscription. */
           }}
-          onOpenTask={setSelected}
+          onOpenTask={selectTask}
         />
       ) : null}
     </>
