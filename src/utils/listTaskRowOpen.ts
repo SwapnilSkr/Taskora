@@ -5,6 +5,14 @@ import type { TaskDoc } from "../types/models";
 const OVERLAY_JITTER_MS = 400;
 
 /**
+ * Non-modal context menus finish closing asynchronously. Running `onSelect` work that opens a
+ * sheet/dialog in the same turn can race teardown and be dropped. Schedule for the next task.
+ */
+export function deferContextMenuAction(fn: () => void): void {
+  window.setTimeout(fn, 0);
+}
+
+/**
  * Radix portaled content still bubbles in React’s tree; stop it reaching `<tr onClick>`.
  */
 export const listRowPortaledOverlayHandlers: {

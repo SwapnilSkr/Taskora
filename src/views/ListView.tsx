@@ -58,6 +58,7 @@ import {
   tsToDate,
 } from "../utils/format";
 import {
+  deferContextMenuAction,
   listRowPortaledOverlayHandlers,
   useTaskRowClick,
 } from "../utils/listTaskRowOpen";
@@ -273,18 +274,28 @@ function ListSectionContextMenu({
     <ContextMenu modal={false}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => onAddTask(section.id)}>
+        <ContextMenuItem
+          onSelect={() =>
+            deferContextMenuAction(() => onAddTask(section.id))
+          }
+        >
           Add task
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
-          onSelect={() => onRequestRenameSection(section.id, section.name)}
+          onSelect={() =>
+            deferContextMenuAction(() =>
+              onRequestRenameSection(section.id, section.name),
+            )
+          }
         >
           Rename section…
         </ContextMenuItem>
         <ContextMenuItem
           variant="destructive"
-          onSelect={() => void onDeleteSection(section.id)}
+          onSelect={() =>
+            deferContextMenuAction(() => void onDeleteSection(section.id))
+          }
         >
           Delete section…
         </ContextMenuItem>
@@ -312,18 +323,28 @@ function ListTaskContextMenu({
     <ContextMenu modal={false}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => onTaskClick(task)}>
+        <ContextMenuItem
+          onSelect={() =>
+            deferContextMenuAction(() => onTaskClick(task))
+          }
+        >
           Open details
         </ContextMenuItem>
         {allowAddSubtask ? (
-          <ContextMenuItem onSelect={() => onOpenSubtask()}>
+          <ContextMenuItem
+            onSelect={() =>
+              deferContextMenuAction(() => onOpenSubtask())
+            }
+          >
             Add subtask
           </ContextMenuItem>
         ) : null}
         <ContextMenuSeparator />
         <ContextMenuItem
           variant="destructive"
-          onSelect={() => void onDeleteTask(task.id)}
+          onSelect={() =>
+            deferContextMenuAction(() => void onDeleteTask(task.id))
+          }
         >
           Delete task…
         </ContextMenuItem>

@@ -2,26 +2,17 @@ import {
   createContext,
   useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from 'react'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { XIcon } from 'lucide-react'
+import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -29,6 +20,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { NON_MODAL_DIALOG_OUTSIDE_GUARD_MS } from '@/utils/nonModalDialogGuard'
 
 export type ConfirmOptions = {
   title: string
@@ -66,6 +59,76 @@ type Active =
   | (ConfirmOptions & { kind: 'confirm' })
   | (PromptOptions & { kind: 'prompt' })
   | (AlertOptions & { kind: 'alert' })
+
+/** Centered dialog without Radix modal overlay (avoids react-remove-scroll resetting nested page scroll). */
+function ModalGlass({
+  open,
+  onOpenChange,
+  showCloseButton,
+  contentClassName,
+  role = 'dialog',
+  children,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  showCloseButton?: boolean
+  contentClassName?: string
+  role?: 'dialog' | 'alertdialog'
+  children: React.ReactNode
+}) {
+  const suppressOutsideDismissUntilRef = useRef(0)
+  useLayoutEffect(() => {
+    if (open) {
+      suppressOutsideDismissUntilRef.current =
+        Date.now() + NON_MODAL_DIALOG_OUTSIDE_GUARD_MS
+    }
+  }, [open])
+
+  const onInteractOutside = useCallback(
+    (event: { preventDefault: () => void }) => {
+      if (Date.now() < suppressOutsideDismissUntilRef.current) {
+        event.preventDefault()
+      }
+    },
+    [],
+  )
+
+  return (
+    <DialogPrimitive.Root modal={false} open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <div
+          aria-hidden
+          className="fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs"
+        />
+        <DialogPrimitive.Content
+          role={role}
+          onInteractOutside={onInteractOutside}
+          className={cn(
+            'fixed top-1/2 left-1/2 z-51 grid max-h-[min(calc(100vh-2rem),100%)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-md',
+            'duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+            'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+            contentClassName,
+          )}
+        >
+          {children}
+          {showCloseButton ? (
+            <DialogPrimitive.Close asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                size="icon-sm"
+              >
+                <XIcon />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogPrimitive.Close>
+          ) : null}
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  )
+}
 
 export function ModalProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<Active | null>(null)
@@ -132,110 +195,119 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     finishPrompt(trimmed === '' ? null : trimmed)
   }
 
+  const confirmFooterClass =
+    '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end'
+
   return (
     <Ctx.Provider value={value}>
       {children}
 
-      <AlertDialog
+      <ModalGlass
         open={active?.kind === 'confirm'}
         onOpenChange={(open) => {
           if (!open) finishConfirm(false)
         }}
+        role="alertdialog"
+        contentClassName="sm:text-left"
       >
-        <AlertDialogContent className="max-w-md sm:text-left">
-          {active?.kind === 'confirm' ? (
-            <>
-              <AlertDialogHeader className="text-left sm:text-left">
-                <AlertDialogTitle>{active.title}</AlertDialogTitle>
-                <AlertDialogDescription>{active.message}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{active.cancelLabel ?? 'Cancel'}</AlertDialogCancel>
-                <AlertDialogAction
-                  variant={active.danger ? 'destructive' : 'default'}
-                  onClick={() => finishConfirm(true)}
-                >
-                  {active.confirmLabel ?? 'Confirm'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </>
-          ) : null}
-        </AlertDialogContent>
-      </AlertDialog>
+        {active?.kind === 'confirm' ? (
+          <>
+            <DialogHeader className="text-left sm:text-left">
+              <DialogTitle>{active.title}</DialogTitle>
+              <DialogDescription>{active.message}</DialogDescription>
+            </DialogHeader>
+            <div className={confirmFooterClass}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => finishConfirm(false)}
+              >
+                {active.cancelLabel ?? 'Cancel'}
+              </Button>
+              <Button
+                type="button"
+                variant={active.danger ? 'destructive' : 'default'}
+                onClick={() => finishConfirm(true)}
+              >
+                {active.confirmLabel ?? 'Confirm'}
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </ModalGlass>
 
-      <AlertDialog
+      <ModalGlass
         open={active?.kind === 'alert'}
         onOpenChange={(open) => {
           if (!open) finishAlert()
         }}
+        role="alertdialog"
+        contentClassName="sm:text-left"
       >
-        <AlertDialogContent className="max-w-md sm:text-left">
-          {active?.kind === 'alert' ? (
-            <>
-              <AlertDialogHeader className="text-left sm:text-left">
-                <AlertDialogTitle>{active.title}</AlertDialogTitle>
-                <AlertDialogDescription>{active.message}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogAction onClick={() => finishAlert()}>
-                  {active.okLabel ?? 'OK'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </>
-          ) : null}
-        </AlertDialogContent>
-      </AlertDialog>
+        {active?.kind === 'alert' ? (
+          <>
+            <DialogHeader className="text-left sm:text-left">
+              <DialogTitle>{active.title}</DialogTitle>
+              <DialogDescription>{active.message}</DialogDescription>
+            </DialogHeader>
+            <div className={confirmFooterClass}>
+              <Button type="button" onClick={() => finishAlert()}>
+                {active.okLabel ?? 'OK'}
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </ModalGlass>
 
-      <Dialog
+      <ModalGlass
         open={active?.kind === 'prompt'}
         onOpenChange={(open) => {
           if (!open) finishPrompt(null)
         }}
+        showCloseButton
       >
-        <DialogContent className="max-w-md" showCloseButton>
-          {active?.kind === 'prompt' ? (
-            <form onSubmit={handlePromptSubmit}>
-              <DialogHeader>
-                <DialogTitle>{active.title}</DialogTitle>
-                {active.message ? (
-                  <DialogDescription>{active.message}</DialogDescription>
-                ) : null}
-              </DialogHeader>
-              {active.label ? (
-                <div className="grid gap-2 py-2">
-                  <Label htmlFor="app-prompt-input">{active.label}</Label>
-                  <Input
-                    id="app-prompt-input"
-                    autoFocus
-                    placeholder={active.placeholder}
-                    value={promptValue}
-                    onChange={(e) => setPromptValue(e.target.value)}
-                  />
-                </div>
-              ) : (
+        {active?.kind === 'prompt' ? (
+          <form onSubmit={handlePromptSubmit}>
+            <DialogHeader>
+              <DialogTitle>{active.title}</DialogTitle>
+              {active.message ? (
+                <DialogDescription>{active.message}</DialogDescription>
+              ) : null}
+            </DialogHeader>
+            {active.label ? (
+              <div className="grid gap-2 py-2">
+                <Label htmlFor="app-prompt-input">{active.label}</Label>
                 <Input
                   id="app-prompt-input"
-                  className="mt-2"
                   autoFocus
                   placeholder={active.placeholder}
                   value={promptValue}
                   onChange={(e) => setPromptValue(e.target.value)}
                 />
-              )}
-              <DialogFooter className="gap-2 sm:gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => finishPrompt(null)}
-                >
-                  {active.cancelLabel ?? 'Cancel'}
-                </Button>
-                <Button type="submit">{active.confirmLabel ?? 'Save'}</Button>
-              </DialogFooter>
-            </form>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+              </div>
+            ) : (
+              <Input
+                id="app-prompt-input"
+                className="mt-2"
+                autoFocus
+                placeholder={active.placeholder}
+                value={promptValue}
+                onChange={(e) => setPromptValue(e.target.value)}
+              />
+            )}
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => finishPrompt(null)}
+              >
+                {active.cancelLabel ?? 'Cancel'}
+              </Button>
+              <Button type="submit">{active.confirmLabel ?? 'Save'}</Button>
+            </DialogFooter>
+          </form>
+        ) : null}
+      </ModalGlass>
     </Ctx.Provider>
   )
 }

@@ -1,5 +1,12 @@
 import { Timestamp } from 'firebase/firestore'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useModals } from '@/context/ModalContext'
 import { RichTextContent } from '@/components/RichTextContent'
@@ -40,6 +47,7 @@ import { uploadTaskFile, uploadTaskImageBlob } from '@/services/storage'
 import type { AttachmentMeta, CommentDoc, StatusDoc, TaskDoc } from '@/types/models'
 import { fmtDateFull, tsToDate } from '@/utils/format'
 import { markdownImageLine } from '@/utils/imagePaste'
+import { NON_MODAL_DIALOG_OUTSIDE_GUARD_MS } from '@/utils/nonModalDialogGuard'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -213,6 +221,22 @@ export function TaskDetailPanel({
   const subtasks = useMemo(
     () => allTasks.filter((x) => x.parentTaskId === task?.id),
     [allTasks, task?.id],
+  )
+
+  const suppressSheetOutsideDismissUntilRef = useRef(0)
+  useLayoutEffect(() => {
+    if (task?.id == null) return
+    suppressSheetOutsideDismissUntilRef.current =
+      Date.now() + NON_MODAL_DIALOG_OUTSIDE_GUARD_MS
+  }, [task?.id])
+
+  const onSheetInteractOutside = useCallback(
+    (event: { preventDefault: () => void }) => {
+      if (Date.now() < suppressSheetOutsideDismissUntilRef.current) {
+        event.preventDefault()
+      }
+    },
+    [],
   )
 
   if (!task) return null
@@ -953,6 +977,7 @@ export function TaskDetailPanel({
           className="fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs"
         />
         <DialogPrimitive.Content
+          onInteractOutside={onSheetInteractOutside}
           className={cn(
             'fixed inset-y-0 right-0 z-51 flex h-full w-3/4 max-w-full flex-col gap-0 overflow-hidden border-l border-border/70 bg-popover p-0 text-sm text-popover-foreground outline-none',
             'shadow-[-24px_0_48px_-24px_rgba(0,0,0,0.18)] dark:shadow-[-24px_0_56px_-24px_rgba(0,0,0,0.55)]',
