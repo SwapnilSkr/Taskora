@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useModals } from '@/context/ModalContext'
+import { ProjectNavContextMenu } from '@/components/ProjectNavContextMenu'
 import { createProject, subscribeProjects } from '@/services/db'
 import type { ProjectDoc } from '@/types/models'
 import { Button } from '@/components/ui/button'
@@ -51,30 +52,33 @@ export function HomePage() {
 
       <div className="mt-7 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
         {projects.map((p) => (
-          <Card
-            key={p.id}
-            className="border-border bg-card cursor-pointer transition-colors hover:border-primary/30"
-            role="button"
-            tabIndex={0}
-            onClick={() => nav(`/project/${p.id}/list`)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                nav(`/project/${p.id}/list`)
-              }
-            }}
-          >
-            <CardContent className="p-4 text-left">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="h-3 w-3 shrink-0 rounded-[3px]"
-                  style={{ background: p.color }}
-                />
-                <span className="font-bold">{p.name}</span>
-              </div>
-              <div className="text-muted-foreground mt-2 text-xs">Open list view</div>
-            </CardContent>
-          </Card>
+          <ProjectNavContextMenu key={p.id} uid={uid} project={p}>
+            <Card
+              className="border-border bg-card cursor-pointer transition-colors hover:border-primary/30"
+              role="button"
+              tabIndex={0}
+              onClick={() => nav(`/project/${p.id}/list`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  nav(`/project/${p.id}/list`)
+                }
+              }}
+            >
+              <CardContent className="p-4 text-left">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-[3px]"
+                    style={{ background: p.color }}
+                  />
+                  <span className="font-bold">{p.name}</span>
+                </div>
+                <div className="text-muted-foreground mt-2 text-xs">
+                  Open list view · Right-click for more
+                </div>
+              </CardContent>
+            </Card>
+          </ProjectNavContextMenu>
         ))}
       </div>
     </div>

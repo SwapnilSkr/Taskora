@@ -16,6 +16,7 @@ import { useModals } from '@/context/ModalContext'
 import { createProject, subscribeProjects } from '@/services/db'
 import type { ProjectDoc } from '@/types/models'
 import { ProjectColorPicker } from '@/components/ProjectColorPicker'
+import { ProjectNavContextMenu } from '@/components/ProjectNavContextMenu'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -131,9 +132,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       </div>
       {projects.map((p) => {
         const isProjectRoute = loc.pathname.startsWith(`/project/${p.id}`)
-        return (
+        const row = (
           <div
-            key={p.id}
             className={clsx(
               'flex w-full min-w-0 items-center gap-0.5 rounded-md transition-colors duration-120',
               isProjectRoute ? 'bg-accent' : 'hover:bg-accent/85',
@@ -159,6 +159,17 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             >
               {p.name}
             </Link>
+          </div>
+        )
+        return (
+          <div key={p.id}>
+            {user ? (
+              <ProjectNavContextMenu uid={user.uid} project={p}>
+                {row}
+              </ProjectNavContextMenu>
+            ) : (
+              row
+            )}
           </div>
         )
       })}

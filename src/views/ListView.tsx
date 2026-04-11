@@ -88,6 +88,7 @@ type Props = {
   onPriorityChange: (taskId: string, priority: TaskDoc["priority"]) => void;
   onAddSubtask: (parentId: string, sectionId: string, title: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onRequestRenameTask: (taskId: string, currentTitle: string) => void;
   onRequestRenameSection: (sectionId: string, currentName: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onMoveTask: (taskId: string, patch: TaskMovePatch) => void;
@@ -309,6 +310,7 @@ function ListTaskContextMenu({
   allowAddSubtask,
   onTaskClick,
   onOpenSubtask,
+  onRequestRenameTask,
   onDeleteTask,
   children,
 }: {
@@ -316,6 +318,7 @@ function ListTaskContextMenu({
   allowAddSubtask: boolean;
   onTaskClick: (t: TaskDoc) => void;
   onOpenSubtask: () => void;
+  onRequestRenameTask: (taskId: string, currentTitle: string) => void;
   onDeleteTask: (taskId: string) => void;
   children: React.ReactElement;
 }) {
@@ -329,6 +332,15 @@ function ListTaskContextMenu({
           }
         >
           Open details
+        </ContextMenuItem>
+        <ContextMenuItem
+          onSelect={() =>
+            deferContextMenuAction(() =>
+              onRequestRenameTask(task.id, task.title),
+            )
+          }
+        >
+          Rename…
         </ContextMenuItem>
         {allowAddSubtask ? (
           <ContextMenuItem
@@ -507,6 +519,7 @@ export function ListView({
   onPriorityChange,
   onAddSubtask,
   onDeleteTask,
+  onRequestRenameTask,
   onRequestRenameSection,
   onDeleteSection,
   onMoveTask,
@@ -644,6 +657,7 @@ export function ListView({
                     onDueChange={onDueChange}
                     onPriorityChange={onPriorityChange}
                     onDeleteTask={onDeleteTask}
+                    onRequestRenameTask={onRequestRenameTask}
                     onOpenSubtask={() =>
                       setInlineSub({ parentId: t.id, sectionId: t.sectionId })
                     }
@@ -755,6 +769,7 @@ export function ListView({
                     onDueChange={onDueChange}
                     onPriorityChange={onPriorityChange}
                     onDeleteTask={onDeleteTask}
+                    onRequestRenameTask={onRequestRenameTask}
                     onOpenSubtask={() =>
                       setInlineSub({ parentId: t.id, sectionId: t.sectionId })
                     }
@@ -1292,6 +1307,7 @@ function TaskRow({
   onDueChange,
   onPriorityChange,
   onDeleteTask,
+  onRequestRenameTask,
   onOpenSubtask,
   sort,
   subtaskComposerOpen,
@@ -1310,6 +1326,7 @@ function TaskRow({
   onDueChange: (taskId: string, ymd: string | null) => void;
   onPriorityChange: (taskId: string, priority: TaskDoc["priority"]) => void;
   onDeleteTask: (taskId: string) => void;
+  onRequestRenameTask: (taskId: string, currentTitle: string) => void;
   onOpenSubtask: () => void;
   sort: SortMode;
   subtaskComposerOpen: boolean;
@@ -1333,6 +1350,7 @@ function TaskRow({
         allowAddSubtask
         onTaskClick={onTaskClick}
         onOpenSubtask={onOpenSubtask}
+        onRequestRenameTask={onRequestRenameTask}
         onDeleteTask={onDeleteTask}
       >
         <tr
@@ -1400,6 +1418,7 @@ function TaskRow({
             allowAddSubtask={false}
             onTaskClick={onTaskClick}
             onOpenSubtask={onOpenSubtask}
+            onRequestRenameTask={onRequestRenameTask}
             onDeleteTask={onDeleteTask}
           >
             <tr

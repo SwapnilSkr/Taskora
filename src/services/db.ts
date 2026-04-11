@@ -681,6 +681,34 @@ export async function bulkSetAssignee(
   await updateDoc(projectRef(uid, projectId), { updatedAt: ts() })
 }
 
+/** Deletes all tasks (and nested subtasks, comments, attachments), sections, and the project document. */
+export async function deleteProject(
+  uid: string,
+  projectId: string,
+): Promise<void> {
+  for (;;) {
+    const tq = await getDocs(tasksCol(uid, projectId))
+    if (tq.empty) break
+    await deleteTask(uid, projectId, tq.docs[0].id)
+  }
+
+  const sq = await getDocs(sectionsCol(uid, projectId))
+  let batch = writeBatch(getDb())
+  let n = 0
+  for (const d of sq.docs) {
+    batch.delete(d.ref)
+    n++
+    if (n >= BATCH_LIMIT) {
+      await batch.commit()
+      batch = writeBatch(getDb())
+      n = 0
+    }
+  }
+  if (n > 0) await batch.commit()
+
+  await deleteDoc(projectRef(uid, projectId))
+}
+
 export function subscribeComments(
   uid: string,
   projectId: string,

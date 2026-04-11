@@ -27,6 +27,7 @@ import {
   bulkSetAssignee,
   bulkSetTasksCompleted,
   createTask,
+  deleteProject,
   deleteSection,
   deleteTask,
   renameSection,
@@ -51,6 +52,13 @@ import {
   type TaskMovePatch,
 } from '../utils/taskDnD'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const OverviewView = lazy(() =>
   import('../views/OverviewView').then((m) => ({ default: m.OverviewView })),
@@ -267,6 +275,7 @@ export function ProjectPage() {
   }
 
   const pid = projectId
+  const projectDoc = project
 
   async function onAddTask(sectionId: string) {
     const title = await prompt({
@@ -396,6 +405,44 @@ export function ProjectPage() {
     })
   }
 
+  async function handleRequestRenameTask(
+    taskId: string,
+    currentTitle: string,
+  ) {
+    const title = await prompt({
+      title: 'Rename task',
+      label: 'Task name',
+      defaultValue: currentTitle,
+      confirmLabel: 'Save',
+    })
+    if (!title?.trim()) return
+    await updateTask(uid, pid, taskId, { title: title.trim() })
+  }
+
+  async function handleRenameCurrentProject() {
+    const name = await prompt({
+      title: 'Rename project',
+      message: 'This name appears in the sidebar, home, and command palette.',
+      label: 'Project name',
+      defaultValue: projectDoc.name,
+      confirmLabel: 'Save',
+    })
+    if (!name?.trim()) return
+    await updateProject(uid, pid, { name: name.trim() })
+  }
+
+  async function handleDeleteCurrentProject() {
+    const ok = await confirm({
+      title: 'Delete project',
+      message: `Permanently delete “${projectDoc.name}” and all of its sections, tasks, subtasks, comments, and attachments? This cannot be undone.`,
+      confirmLabel: 'Delete project',
+      danger: true,
+    })
+    if (!ok) return
+    await deleteProject(uid, pid)
+    nav('/home', { replace: true })
+  }
+
   function goView(v: ProjectView) {
     if (v !== activeView) {
       setSelectedIds(new Set())
@@ -478,13 +525,41 @@ export function ProjectPage() {
               }}
             />
           </button>
-          <button
-            type="button"
-            className="text-muted-foreground hover:text-foreground [&_svg]:size-5"
-            title="Project menu"
-          >
-            <IconChevronDown />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground [&_svg]:size-5"
+                title="Project menu"
+              >
+                <IconChevronDown />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[220px]">
+              <DropdownMenuItem
+                className="text-[13px]"
+                onSelect={() => void handleRenameCurrentProject()}
+              >
+                Rename project…
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-[13px]"
+                onSelect={() =>
+                  void updateProject(uid, pid, { starred: !project.starred })
+                }
+              >
+                {project.starred ? 'Remove star' : 'Star project'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                className="text-[13px]"
+                onSelect={() => void handleDeleteCurrentProject()}
+              >
+                Delete project…
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="mt-3 flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border pb-px [-ms-overflow-style:auto] [scrollbar-width:thin]">
@@ -828,6 +903,9 @@ export function ProjectPage() {
               void handleAddSubtaskQuick(parentId, sectionId, title)
             }
             onDeleteTask={(id) => void handleDeleteTaskRow(id)}
+            onRequestRenameTask={(taskId, title) =>
+              void handleRequestRenameTask(taskId, title)
+            }
             onRequestRenameSection={(sid, name) =>
               void handleRequestRenameSection(sid, name)
             }
