@@ -316,6 +316,15 @@ export async function renameSection(
   await updateDoc(doc(sectionsCol(uid, projectId), sectionId), { name })
 }
 
+export async function reorderSection(
+  uid: string,
+  projectId: string,
+  sectionId: string,
+  sortOrder: number,
+): Promise<void> {
+  await updateDoc(doc(sectionsCol(uid, projectId), sectionId), { sortOrder })
+}
+
 const BATCH_FIRESTORE = 450
 
 /** Moves tasks to another section, then deletes the section doc (requires ≥2 sections). */

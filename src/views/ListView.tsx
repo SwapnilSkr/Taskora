@@ -3,7 +3,7 @@ import { startOfDay } from "date-fns";
 import { CheckIcon } from "lucide-react";
 import type React from "react";
 import type { Matcher } from "react-day-picker";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -15,12 +15,19 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
+  gapSectionDropId,
+  gapTaskDropId,
   parseTaskDragId,
-  parentTaskDropId,
+  parseSectionDragId,
+  resolveTaskAppendSubtaskChain,
   resolveTaskDrop,
+  resolveTaskGapSectionMove,
+  resolveTaskReorder,
+  resolveSectionReorder,
+  sectionDragId,
   sectionDropId,
   taskDragId,
-  taskDropCollisionDetection,
+  taskDropCollisionDetectionForTasks,
   type TaskMovePatch,
 } from "../utils/taskDnD";
 import {
@@ -92,6 +99,7 @@ type Props = {
   onRequestRenameSection: (sectionId: string, currentName: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onMoveTask: (taskId: string, patch: TaskMovePatch) => void;
+  onMoveSection: (sectionId: string, sortOrder: number) => void;
 };
 
 /** Controlled popover + shadcn Calendar; closes on pick (native date input remounted the tree and broke dismiss). */
@@ -414,7 +422,7 @@ function ListDragHandleCell({ taskId }: { taskId: string }) {
             "grid size-7 shrink-0 cursor-grab place-items-center rounded-md text-muted-foreground hover:bg-row-hover hover:text-fg active:cursor-grabbing",
             isDragging && "opacity-40",
           )}
-          title="Drag to a section header to move or promote; drag to a task name to nest under it"
+          title="Drop on gaps between rows to reorder. Section header: move root tasks between sections or promote subtasks."
           {...listeners}
           {...attributes}
         >
@@ -427,35 +435,21 @@ function ListDragHandleCell({ taskId }: { taskId: string }) {
   );
 }
 
-function TaskTitleDropCell({
-  task,
-  isRoot,
+function TaskTitleCell({
   onKeyDown,
   children,
 }: {
-  task: TaskDoc;
-  isRoot: boolean;
   onKeyDown: (e: React.KeyboardEvent) => void;
   children: React.ReactNode;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: parentTaskDropId(task.id),
-    disabled: !isRoot,
-  });
   return (
     <td
       tabIndex={0}
       onKeyDown={onKeyDown}
       style={{ verticalAlign: "middle" }}
-      className={clsx(
-        "min-w-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-share/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        isOver && isRoot && "bg-muted/25 ring-1 ring-inset ring-share/35",
-      )}
+      className="min-w-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-share/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <div
-        ref={setNodeRef}
-        className="flex min-h-9 w-full max-w-full items-center pr-1"
-      >
+      <div className="flex min-h-9 w-full max-w-full items-center pr-1">
         <div className="min-w-0 flex-1 truncate font-semibold text-[13px] leading-snug text-foreground">
           {children}
         </div>
@@ -498,6 +492,72 @@ function ListSectionTitleCell({
   );
 }
 
+/** Drag handle for a section header row – active in section-group mode only. */
+function ListSectionDragHandle({ sectionId }: { sectionId: string }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: sectionDragId(sectionId),
+  });
+  return (
+    <td
+      className="px-0! align-middle first:pl-0"
+      style={{ width: 32, verticalAlign: "middle" }}
+    >
+      <div className="flex min-h-11 items-center justify-center px-0.5">
+        <button
+          ref={setNodeRef}
+          type="button"
+          data-row-action
+          className={clsx(
+            "grid size-7 shrink-0 cursor-grab place-items-center rounded-md text-muted-foreground hover:bg-row-hover hover:text-fg active:cursor-grabbing",
+            isDragging && "opacity-40",
+          )}
+          title="Drag to reorder section"
+          {...listeners}
+          {...attributes}
+        >
+          <span className="select-none text-[11px] leading-none opacity-60" aria-hidden>
+            ⠿
+          </span>
+        </button>
+      </div>
+    </td>
+  );
+}
+
+/** Thin droppable gap row rendered before a task row – shows a line indicator when hovered. */
+function ListTaskGapRow({ taskId }: { taskId: string }) {
+  const { setNodeRef, isOver } = useDroppable({ id: gapTaskDropId(taskId) });
+  return (
+    <tr style={{ height: 8 }} aria-hidden>
+      <td ref={setNodeRef} colSpan={100} style={{ padding: 0, height: 8 }}>
+        <div
+          className={clsx(
+            "mx-3 h-0.5 rounded-full transition-colors duration-75",
+            isOver ? "bg-share" : "bg-transparent",
+          )}
+        />
+      </td>
+    </tr>
+  );
+}
+
+/** Thin droppable gap row rendered before a section header – shows a line indicator when hovered. */
+function ListSectionGapRow({ sectionId }: { sectionId: string }) {
+  const { setNodeRef, isOver } = useDroppable({ id: gapSectionDropId(sectionId) });
+  return (
+    <tr style={{ height: 8 }} aria-hidden>
+      <td ref={setNodeRef} colSpan={100} style={{ padding: 0, height: 8 }}>
+        <div
+          className={clsx(
+            "mx-3 h-0.5 rounded-full transition-colors duration-75",
+            isOver ? "bg-share" : "bg-transparent",
+          )}
+        />
+      </td>
+    </tr>
+  );
+}
+
 export function ListView({
   sections,
   statuses,
@@ -523,19 +583,58 @@ export function ListView({
   onRequestRenameSection,
   onDeleteSection,
   onMoveTask,
+  onMoveSection,
 }: Props) {
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
+  const [dragSectionId, setDragSectionId] = useState<string | null>(null);
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
   function onDragEndList(e: DragEndEvent) {
-    const draggedId = parseTaskDragId(e.active.id);
     const overRaw = e.over?.id != null ? String(e.over.id) : null;
+
+    // ── Section reorder ──────────────────────────────────────────────────
+    const draggedSectionId = parseSectionDragId(e.active.id);
+    setDragSectionId(null);
+    if (draggedSectionId) {
+      if (overRaw) {
+        const patch = resolveSectionReorder(sections, draggedSectionId, overRaw);
+        if (patch) onMoveSection(draggedSectionId, patch.sortOrder);
+      }
+      return;
+    }
+
+    // ── Task reorder / move (section) ─────────────────────────────────────
+    const draggedId = parseTaskDragId(e.active.id);
     setDragTaskId(null);
     if (!draggedId || !overRaw) return;
-    const patch = resolveTaskDrop(tasksForMove, draggedId, overRaw);
-    if (patch) onMoveTask(draggedId, patch);
+
+    const reorderPatch = resolveTaskReorder(tasksForMove, draggedId, overRaw);
+    if (reorderPatch) {
+      onMoveTask(draggedId, reorderPatch);
+      return;
+    }
+    const appendSubPatch = resolveTaskAppendSubtaskChain(
+      tasksForMove,
+      draggedId,
+      overRaw,
+    );
+    if (appendSubPatch) {
+      onMoveTask(draggedId, appendSubPatch);
+      return;
+    }
+    const gapSectionPatch = resolveTaskGapSectionMove(
+      tasksForMove,
+      draggedId,
+      overRaw,
+    );
+    if (gapSectionPatch) {
+      onMoveTask(draggedId, gapSectionPatch);
+      return;
+    }
+    const movePatch = resolveTaskDrop(tasksForMove, draggedId, overRaw);
+    if (movePatch) onMoveTask(draggedId, movePatch);
   }
   const [inlineSub, setInlineSub] = useState<{
     parentId: string;
@@ -549,6 +648,9 @@ export function ListView({
 
   const roots = tasks.filter((x) => !x.parentTaskId);
 
+  const isDraggingTask = dragTaskId !== null;
+  const isDraggingSection = dragSectionId !== null;
+
   const sectionBody =
     group === "section"
       ? sections.map((s) => {
@@ -559,6 +661,9 @@ export function ListView({
           const ids = rowTasks.map((t) => t.id);
           return (
             <Fragment key={s.id}>
+              {isDraggingSection && (
+                <ListSectionGapRow sectionId={s.id} />
+              )}
               <ListSectionContextMenu
                 section={s}
                 onAddTask={onAddTask}
@@ -577,10 +682,7 @@ export function ListView({
                       ) : null}
                     </td>
                   ) : null}
-                  <td
-                    className="w-8 border-b-0 pb-2 pt-[22px]"
-                    aria-hidden
-                  />
+                  <ListSectionDragHandle sectionId={s.id} />
                   <ListSectionTitleCell
                     sectionId={s.id}
                     group={group}
@@ -643,6 +745,7 @@ export function ListView({
               </ListSectionContextMenu>
               {rowTasks.map((t) => (
                 <Fragment key={t.id}>
+                  {isDraggingTask && <ListTaskGapRow taskId={t.id} />}
                   <TaskRow
                     task={t}
                     subtasks={tasks.filter((x) => x.parentTaskId === t.id)}
@@ -664,6 +767,7 @@ export function ListView({
                     sort={sort}
                     subtaskComposerOpen={inlineSub?.parentId === t.id}
                     statuses={statuses}
+                    showSubtaskGaps={isDraggingTask}
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr>
@@ -776,6 +880,7 @@ export function ListView({
                     sort={sort}
                     subtaskComposerOpen={inlineSub?.parentId === t.id}
                     statuses={statuses}
+                    showSubtaskGaps={isDraggingTask}
                   />
                   {inlineSub?.parentId === t.id ? (
                     <tr>
@@ -830,15 +935,27 @@ export function ListView({
   const draggedTask = dragTaskId
     ? (tasksForMove.find((x) => x.id === dragTaskId) ?? null)
     : null;
+  const draggedSection = dragSectionId
+    ? (sections.find((s) => s.id === dragSectionId) ?? null)
+    : null;
+
+  const listCollisionDetection = useMemo(
+    () => taskDropCollisionDetectionForTasks(),
+    [],
+  );
 
   return (
     <DndContext
       sensors={dndSensors}
-      collisionDetection={taskDropCollisionDetection}
+      collisionDetection={listCollisionDetection}
       onDragStart={(e) => {
         setDragTaskId(parseTaskDragId(e.active.id));
+        setDragSectionId(parseSectionDragId(e.active.id));
       }}
-      onDragCancel={() => setDragTaskId(null)}
+      onDragCancel={() => {
+        setDragTaskId(null);
+        setDragSectionId(null);
+      }}
       onDragEnd={onDragEndList}
     >
       <div className="min-w-0 max-w-full pb-12">
@@ -941,6 +1058,12 @@ export function ListView({
                 {draggedTask.title.trim() || "Untitled task"}
               </p>
             </div>
+          </div>
+        ) : draggedSection ? (
+          <div className="box-border w-max max-w-[min(28rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-border bg-raised px-4 py-2 shadow-lg">
+            <span className="text-[13px] font-bold text-foreground">
+              {draggedSection.name}
+            </span>
           </div>
         ) : null}
       </DragOverlay>
@@ -1312,6 +1435,7 @@ function TaskRow({
   sort,
   subtaskComposerOpen,
   statuses,
+  showSubtaskGaps,
 }: {
   task: TaskDoc;
   subtasks: TaskDoc[];
@@ -1331,6 +1455,7 @@ function TaskRow({
   sort: SortMode;
   subtaskComposerOpen: boolean;
   statuses: StatusDoc[];
+  showSubtaskGaps: boolean;
 }) {
   const orderedSubtasks = sortTasks(subtasks, sort);
 
@@ -1376,13 +1501,9 @@ function TaskRow({
             onStatusChange={onStatusChange}
             onOverlayClosed={onOverlayClosed}
           />
-          <TaskTitleDropCell
-            task={t}
-            isRoot={!t.parentTaskId}
-            onKeyDown={handleTaskKeyDown}
-          >
+                            <TaskTitleCell onKeyDown={handleTaskKeyDown}>
             {t.title}
-          </TaskTitleDropCell>
+          </TaskTitleCell>
           <TaskRowMetaColumns
             t={t}
             uid={uid}
@@ -1412,8 +1533,9 @@ function TaskRow({
           }
         };
         return (
+          <Fragment key={st.id}>
+          {showSubtaskGaps && <ListTaskGapRow taskId={st.id} />}
           <ListTaskContextMenu
-            key={st.id}
             task={st}
             allowAddSubtask={false}
             onTaskClick={onTaskClick}
@@ -1476,6 +1598,7 @@ function TaskRow({
               />
             </tr>
           </ListTaskContextMenu>
+          </Fragment>
         );
       })}
     </>

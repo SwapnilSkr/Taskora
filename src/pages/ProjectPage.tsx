@@ -31,6 +31,7 @@ import {
   deleteSection,
   deleteTask,
   renameSection,
+  reorderSection,
   subscribeProjects,
   subscribeSections,
   subscribeStatuses,
@@ -260,6 +261,30 @@ export function ProjectPage() {
         )
         const msg =
           err instanceof Error ? err.message : 'Could not move this task.'
+        void alert({ title: 'Move blocked', message: msg })
+      })
+    },
+    [uid, projectId, alert],
+  )
+
+  const runOptimisticSectionReorder = useCallback(
+    (sectionId: string, sortOrder: number) => {
+      if (!uid || !projectId) return
+      let prevSortOrder: number | null = null
+      setSections((old) => {
+        const prev = old.find((s) => s.id === sectionId)
+        if (!prev) return old
+        prevSortOrder = prev.sortOrder
+        return old.map((s) => (s.id === sectionId ? { ...s, sortOrder } : s))
+      })
+      void reorderSection(uid, projectId, sectionId, sortOrder).catch((err: unknown) => {
+        if (prevSortOrder !== null) {
+          const reverted = prevSortOrder
+          setSections((old) =>
+            old.map((s) => (s.id === sectionId ? { ...s, sortOrder: reverted } : s)),
+          )
+        }
+        const msg = err instanceof Error ? err.message : 'Could not reorder section.'
         void alert({ title: 'Move blocked', message: msg })
       })
     },
@@ -911,6 +936,7 @@ export function ProjectPage() {
             }
             onDeleteSection={(sid) => void handleDeleteSection(sid)}
             onMoveTask={runOptimisticTaskMove}
+            onMoveSection={runOptimisticSectionReorder}
           />
         ) : null}
         {activeView === 'board' ? (
@@ -922,6 +948,7 @@ export function ProjectPage() {
             onTaskClick={selectTask}
             onAddSection={() => void onAddSection()}
             onMoveTask={runOptimisticTaskMove}
+            onMoveSection={runOptimisticSectionReorder}
             onAddTask={(sid) => void onAddTask(sid)}
             onAddSubtask={(parentId, sectionId, title) =>
               void handleAddSubtaskQuick(parentId, sectionId, title)
