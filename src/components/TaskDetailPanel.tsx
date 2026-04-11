@@ -71,6 +71,8 @@ function fromDateInput(v: string): Timestamp | null {
 
 const NONE = '__none__'
 const UNASSIGNED = '__unassigned__'
+/** Title edits stay local while typing; Firestore updates are debounced to avoid per-keystroke writes. */
+const TITLE_SAVE_DEBOUNCE_MS = 400
 
 /** B2B task detail: grouped surfaces, subdued labels, elevated controls */
 const detailScrollArea =
@@ -148,6 +150,66 @@ export function TaskDetailPanel({
     setCommentText('')
   }, [taskId])
 
+  const taskRef = useRef(task)
+  taskRef.current = task
+  const uidRef = useRef(uid)
+  uidRef.current = uid
+  const projectIdRef = useRef(projectId)
+  projectIdRef.current = projectId
+  const onSavedRef = useRef(onSaved)
+  onSavedRef.current = onSaved
+
+  const [titleDraft, setTitleDraft] = useState(() => task?.title ?? '')
+  const titleDraftRef = useRef(titleDraft)
+  titleDraftRef.current = titleDraft
+  const titleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const previousTaskRef = useRef<TaskDoc | null>(null)
+
+  const flushTitleForTaskDoc = (doc: TaskDoc, draft: string) => {
+    if (draft === doc.title) return
+    void updateTask(uidRef.current, projectIdRef.current, doc.id, {
+      title: draft,
+    }).then(() => onSavedRef.current())
+  }
+
+  const persistCurrentTitleFromRefs = () => {
+    const t = taskRef.current
+    if (!t) return
+    flushTitleForTaskDoc(t, titleDraftRef.current)
+  }
+
+  useLayoutEffect(() => {
+    if (titleDebounceRef.current) {
+      clearTimeout(titleDebounceRef.current)
+      titleDebounceRef.current = null
+    }
+
+    const prev = previousTaskRef.current
+    const next = task
+    if (prev && (!next || prev.id !== next.id)) {
+      flushTitleForTaskDoc(prev, titleDraftRef.current)
+    }
+
+    previousTaskRef.current = next
+    if (next?.id) {
+      setTitleDraft(next.title)
+      titleDraftRef.current = next.title
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- task?.id only: subscription updates must not reset the title while typing
+  }, [task?.id])
+
+  useEffect(() => {
+    return () => {
+      if (titleDebounceRef.current) {
+        clearTimeout(titleDebounceRef.current)
+        titleDebounceRef.current = null
+      }
+      const t = previousTaskRef.current
+      if (!t?.id) return
+      flushTitleForTaskDoc(t, titleDraftRef.current)
+    }
+  }, [])
+
   const subtasks = useMemo(
     () => allTasks.filter((x) => x.parentTaskId === task?.id),
     [allTasks, task?.id],
@@ -215,8 +277,26 @@ export function TaskDetailPanel({
             />
             <Input
               className="col-start-2 row-start-2 h-auto min-h-0 border-0 border-transparent bg-transparent px-0 py-0 text-xl font-semibold tracking-tight text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent md:text-[1.35rem]"
-              value={t.title}
-              onChange={(e) => void savePatch({ title: e.target.value })}
+              value={titleDraft}
+              onChange={(e) => {
+                const v = e.target.value
+                titleDraftRef.current = v
+                setTitleDraft(v)
+                if (titleDebounceRef.current) {
+                  clearTimeout(titleDebounceRef.current)
+                }
+                titleDebounceRef.current = setTimeout(() => {
+                  titleDebounceRef.current = null
+                  persistCurrentTitleFromRefs()
+                }, TITLE_SAVE_DEBOUNCE_MS)
+              }}
+              onBlur={() => {
+                if (titleDebounceRef.current) {
+                  clearTimeout(titleDebounceRef.current)
+                  titleDebounceRef.current = null
+                }
+                persistCurrentTitleFromRefs()
+              }}
               placeholder="Untitled task"
             />
           </div>
