@@ -100,6 +100,8 @@ type Props = {
   onDeleteSection: (sectionId: string) => void;
   onMoveTask: (taskId: string, patch: TaskMovePatch) => void;
   onMoveSection: (sectionId: string, sortOrder: number) => void;
+  /** When a subtask is visible but its parent is not in `tasks`, treat it as a root row for grouping and sections. */
+  surfaceAsRootIds?: Set<string>;
 };
 
 /** Controlled popover + shadcn Calendar; closes on pick (native date input remounted the tree and broke dismiss). */
@@ -584,6 +586,7 @@ export function ListView({
   onDeleteSection,
   onMoveTask,
   onMoveSection,
+  surfaceAsRootIds,
 }: Props) {
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
   const [dragSectionId, setDragSectionId] = useState<string | null>(null);
@@ -646,7 +649,9 @@ export function ListView({
     if (inlineSub) subInputRef.current?.focus({ preventScroll: true });
   }, [inlineSub]);
 
-  const roots = tasks.filter((x) => !x.parentTaskId);
+  const roots = tasks.filter(
+    (x) => !x.parentTaskId || (surfaceAsRootIds?.has(x.id) ?? false),
+  );
 
   const isDraggingTask = dragTaskId !== null;
   const isDraggingSection = dragSectionId !== null;

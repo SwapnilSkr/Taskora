@@ -185,14 +185,61 @@ export function ProjectPage() {
   }, [tasks, selected])
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
+    const taskById = new Map(tasks.map((t) => [t.id, t]))
+
+    const matchesPredicate = (t: TaskDoc) => {
       if (filterHideCompleted && t.completed) return false
       if (filterStatus !== 'all' && t.statusId !== filterStatus) return false
       if (filterAssignee === 'me' && t.assigneeId !== uid) return false
       if (filterAssignee === 'unassigned' && t.assigneeId) return false
       return true
-    })
+    }
+
+    // Include ancestor chain so subtasks that match filters still appear under their parent in List (and Board).
+    const visibleIds = new Set<string>()
+    for (const t of tasks) {
+      if (!matchesPredicate(t)) continue
+      let cur: TaskDoc | undefined = t
+      while (cur) {
+        if (visibleIds.has(cur.id)) break
+        visibleIds.add(cur.id)
+        cur = cur.parentTaskId
+          ? taskById.get(cur.parentTaskId)
+          : undefined
+      }
+    }
+
+    return tasks.filter((t) => visibleIds.has(t.id))
   }, [tasks, filterHideCompleted, filterStatus, filterAssignee, uid])
+
+  const listFilterActive =
+    filterStatus !== 'all' ||
+    filterAssignee !== 'all' ||
+    filterHideCompleted
+
+  /** Subtasks whose parent is not in the filtered set still show as top-level rows (broken links or stale data). */
+  const listSurfaceAsRootIds = useMemo(() => {
+    const ids = new Set(filteredTasks.map((t) => t.id))
+    const surface = new Set<string>()
+    for (const t of filteredTasks) {
+      if (!t.parentTaskId) continue
+      if (!ids.has(t.parentTaskId)) surface.add(t.id)
+    }
+    return surface
+  }, [filteredTasks])
+
+  /** While filters are on, hide section headers that have no visible root tasks in the list. */
+  const listSections = useMemo(() => {
+    if (!listFilterActive) return sections
+    const sectionIds = new Set(
+      filteredTasks
+        .filter(
+          (t) => !t.parentTaskId || listSurfaceAsRootIds.has(t.id),
+        )
+        .map((t) => t.sectionId),
+    )
+    return sections.filter((s) => sectionIds.has(s.id))
+  }, [sections, filteredTasks, listFilterActive, listSurfaceAsRootIds])
 
   const toggleSelect = useCallback((taskId: string) => {
     setSelectedIds((prev) => {
@@ -712,7 +759,10 @@ export function ProjectPage() {
                   key={id}
                   type="button"
                   className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
-                  onClick={() => setSort(id)}
+                  onClick={() => {
+                    setSort(id)
+                    setFilterOpen(null)
+                  }}
                 >
                   {lab}
                 </button>
@@ -734,7 +784,10 @@ export function ProjectPage() {
                   key={id}
                   type="button"
                   className="w-full rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-accent"
-                  onClick={() => setGroup(id)}
+                  onClick={() => {
+                    setGroup(id)
+                    setFilterOpen(null)
+                  }}
                 >
                   {lab}
                 </button>
@@ -750,7 +803,10 @@ export function ProjectPage() {
                 type="button"
                 className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                 data-active={filterStatus === 'all' ? 'true' : 'false'}
-                onClick={() => setFilterStatus('all')}
+                onClick={() => {
+                  setFilterStatus('all')
+                  setFilterOpen(null)
+                }}
               >
                 All statuses
               </button>
@@ -760,7 +816,10 @@ export function ProjectPage() {
                   type="button"
                   className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                   data-active={filterStatus === s.id ? 'true' : 'false'}
-                  onClick={() => setFilterStatus(s.id)}
+                  onClick={() => {
+                    setFilterStatus(s.id)
+                    setFilterOpen(null)
+                  }}
                 >
                   {s.name}
                 </button>
@@ -780,7 +839,10 @@ export function ProjectPage() {
                   type="button"
                   className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                   data-active={filterAssignee === id ? 'true' : 'false'}
-                  onClick={() => setFilterAssignee(id)}
+                  onClick={() => {
+                    setFilterAssignee(id)
+                    setFilterOpen(null)
+                  }}
                 >
                   {lab}
                 </button>
@@ -792,7 +854,10 @@ export function ProjectPage() {
                 type="button"
                 className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground data-[active=true]:bg-accent data-[active=true]:font-semibold"
                 data-active={filterHideCompleted ? 'true' : 'false'}
-                onClick={() => setFilterHideCompleted((x) => !x)}
+                onClick={() => {
+                  setFilterHideCompleted((x) => !x)
+                  setFilterOpen(null)
+                }}
               >
                 Hide completed
                 <span style={{ opacity: 0.7 }}>{filterHideCompleted ? 'On' : 'Off'}</span>
@@ -900,7 +965,7 @@ export function ProjectPage() {
         ) : null}
         {activeView === 'list' ? (
           <ListView
-            sections={sections}
+            sections={listSections}
             statuses={statuses}
             tasks={filteredTasks}
             tasksForMove={tasks}
@@ -937,6 +1002,7 @@ export function ProjectPage() {
             onDeleteSection={(sid) => void handleDeleteSection(sid)}
             onMoveTask={runOptimisticTaskMove}
             onMoveSection={runOptimisticSectionReorder}
+            surfaceAsRootIds={listSurfaceAsRootIds}
           />
         ) : null}
         {activeView === 'board' ? (
